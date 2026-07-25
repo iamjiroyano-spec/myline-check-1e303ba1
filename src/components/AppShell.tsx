@@ -332,7 +332,8 @@ function TopBar({
   setShift,
   member,
   setMember,
-}: Ctx) {
+  onOpenMenu,
+}: Ctx & { onOpenMenu: () => void }) {
   const shifts = useShifts();
 
   const dayName = new Date(date + "T00:00:00").toLocaleDateString(undefined, {
@@ -345,7 +346,15 @@ function TopBar({
   });
   return (
     <header className="sticky top-0 z-10 flex flex-wrap items-center gap-2 border-b border-border bg-background/85 px-4 py-3 backdrop-blur sm:gap-3 sm:px-6 sm:py-4 lg:px-10">
+      <button
+        onClick={onOpenMenu}
+        className="-ml-1 shrink-0 rounded-md border border-border p-2 text-foreground md:hidden"
+        aria-label="Open menu"
+      >
+        <Menu className="h-4 w-4" />
+      </button>
       <h1 className="min-w-0 flex-1 truncate text-base font-bold tracking-tight text-foreground sm:flex-none sm:text-lg">{title}</h1>
+
       <div className="ml-auto flex w-full flex-wrap items-center gap-2 sm:w-auto">
         <Pill icon={<Calendar className="h-3.5 w-3.5" />}>
           <input
