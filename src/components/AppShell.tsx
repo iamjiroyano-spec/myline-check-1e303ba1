@@ -171,7 +171,7 @@ function Sidebar({ date, shift }: { date: string; shift: Slot }) {
             const Icon = SECTION_ICONS[s.name] ?? Utensils;
             const { done, total } = sectionProgress(s.name, shift, date);
             const pct = total ? Math.round((done / total) * 100) : 0;
-            const active = loc.pathname === `/section/${encodeURIComponent(s.name)}`;
+            const active = activeSection === s.name;
             return (
               <li key={s.name}>
                 <Link
