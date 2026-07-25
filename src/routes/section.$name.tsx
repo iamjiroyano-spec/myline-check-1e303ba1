@@ -956,7 +956,7 @@ function SectionPage() {
                       }`}
                     >
                       {(handle) => (<>
-                      <div className="flex items-center gap-3 px-3 py-2.5">
+                      <div className="flex flex-wrap items-center gap-2 px-3 py-2.5 sm:flex-nowrap sm:gap-3">
                       {handle}
 
                       <button
