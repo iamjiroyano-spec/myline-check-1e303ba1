@@ -20,7 +20,7 @@ import {
   type SectionState,
   type Slot,
 } from "@/lib/lineCheck";
-import { Camera, Check, ChevronDown, ChevronUp, Download, Edit3, Filter, GripVertical, Save, Thermometer, Plus, Trash2, Upload, X } from "lucide-react";
+import { Camera, Check, ChevronDown, FolderInput, ChevronUp, Download, Edit3, Filter, GripVertical, Save, Thermometer, Plus, Trash2, Upload, X } from "lucide-react";
 import { z } from "zod";
 import {
   DndContext,
@@ -939,7 +939,7 @@ function SectionPage() {
                   strategy={verticalListSortingStrategy}
                 >
               <div className="space-y-2">
-                {items.map(({ item, occ }) => {
+                {items.map(({ item, occ, idx }) => {
                   const e = readEntry(state, cat.group, item.name, slot, occ);
                   const status = e?.status ?? "";
                   const checked = !!status && OK_STATUSES.has(status);
