@@ -260,6 +260,20 @@ function ReceivingPage() {
     saveRecords(next);
   }
 
+  async function shareRecord(r: ReceivingRecord) {
+    try {
+      const url = await publishSharedReceiving(r);
+      try {
+        await navigator.clipboard.writeText(url);
+        alert(`Public link copied to clipboard:\n${url}`);
+      } catch {
+        prompt("Public share link:", url);
+      }
+    } catch (e) {
+      alert(`Could not create share link: ${(e as Error).message}`);
+    }
+  }
+
   return (
     <AppShell {...shell}>
       <div className="mx-auto w-full max-w-4xl px-4 py-6">
