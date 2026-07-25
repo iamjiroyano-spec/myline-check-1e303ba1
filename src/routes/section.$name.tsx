@@ -2,6 +2,7 @@ import { lsStore } from "@/lib/lsStore";
 import { compressImageFile } from "@/lib/image";
 
 import { createFileRoute, useRouter } from "@tanstack/react-router";
+import type React from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AppShell, useShellState } from "@/components/AppShell";
 import {
@@ -313,6 +314,18 @@ function SectionPage() {
     loadSectionStruct(name, defaultStruct),
   );
   const [draft, setDraft] = useState<EditCategory[]>(struct);
+  const viewSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+  const persistStruct = (next: EditCategory[]) => {
+    try {
+      lsStore.setItem(sectionStructKey(name), JSON.stringify(next));
+    } catch {}
+    setStruct(next);
+    setDraft(next);
+    window.dispatchEvent(new Event("linecheck:update"));
+  };
 
   useEffect(() => {
     setState(loadSection(name, shell.date));
@@ -797,10 +810,10 @@ function SectionPage() {
         struct
           .map((cat) => {
             const seen = new Map<string, number>();
-            const withOcc = cat.items.map((item) => {
+            const withOcc = cat.items.map((item, idx) => {
               const occ = seen.get(item.name) ?? 0;
               seen.set(item.name, occ + 1);
-              return { item, occ };
+              return { item, occ, idx };
             });
             const visible = withOcc.filter(({ item, occ }) => {
               if (!flaggedOnly) return true;
@@ -862,6 +875,26 @@ function SectionPage() {
                 )}
               </div>
 
+              <DndContext
+                sensors={viewSensors}
+                collisionDetection={closestCenter}
+                onDragEnd={(ev: DragEndEvent) => {
+                  const { active, over } = ev;
+                  if (!over || active.id === over.id) return;
+                  const from = items.find((v) => `${v.item.name}#${v.occ}` === active.id)?.idx;
+                  const to = items.find((v) => `${v.item.name}#${v.occ}` === over.id)?.idx;
+                  if (from == null || to == null) return;
+                  persistStruct(
+                    struct.map((c) =>
+                      c.group === cat.group ? { ...c, items: arrayMove(c.items, from, to) } : c,
+                    ),
+                  );
+                }}
+              >
+                <SortableContext
+                  items={items.map(({ item, occ }) => `${item.name}#${occ}`)}
+                  strategy={verticalListSortingStrategy}
+                >
               <div className="space-y-2">
                 {items.map(({ item, occ }) => {
                   const e = readEntry(state, cat.group, item.name, slot, occ);
@@ -872,13 +905,17 @@ function SectionPage() {
 
                   const noteMissing = flagged && !e?.note?.trim();
                   return (
-                    <div
+                    <SortableCheckRow
                       key={`${item.name}#${occ}`}
+                      id={`${item.name}#${occ}`}
                       className={`rounded-2xl border bg-card transition ${
                         noteMissing ? "border-rose-400 ring-1 ring-rose-200" : flagged ? "border-rose-200" : "border-border"
                       }`}
                     >
+                      {(handle) => (<>
                       <div className="flex items-center gap-3 px-3 py-2.5">
+                      {handle}
+
                       <button
                         onClick={() => toggleCheck(cat.group, item.name, occ)}
                         aria-label={checked ? "Uncheck item" : "Mark item OK"}
@@ -1007,12 +1044,16 @@ function SectionPage() {
                           />
                         </div>
                       )}
-                    </div>
+                      </>)}
+                    </SortableCheckRow>
                   );
                 })}
 
               </div>
+                </SortableContext>
+              </DndContext>
             </section>
+
           );})}
 
       {!editMode && (
@@ -1531,6 +1572,47 @@ function SortableItem({
         </select>
         <div className="w-7" />
       </div>
+    </div>
+  );
+}
+
+function SortableCheckRow({
+  id,
+  className,
+  children,
+}: {
+  id: string;
+  className: string;
+  children: (handle: React.ReactNode) => React.ReactNode;
+}) {
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } =
+    useSortable({ id });
+  const handle = (
+    <button
+      type="button"
+      ref={setActivatorNodeRef}
+      {...attributes}
+      {...listeners}
+      aria-label="Drag to reorder item"
+      title="Drag to reorder"
+      className="grid h-7 w-5 shrink-0 cursor-grab touch-none place-items-center rounded text-muted-foreground hover:bg-accent active:cursor-grabbing"
+    >
+      <GripVertical className="h-4 w-4" />
+    </button>
+  );
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.6 : 1,
+        zIndex: isDragging ? 20 : undefined,
+        position: "relative",
+      }}
+      className={className}
+    >
+      {children(handle)}
     </div>
   );
 }
