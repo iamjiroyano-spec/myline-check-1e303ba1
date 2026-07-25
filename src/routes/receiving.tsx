@@ -4,7 +4,7 @@ import { AppShell, useShellState } from "@/components/AppShell";
 import { lsStore } from "@/lib/lsStore";
 import { compressImageFile } from "@/lib/image";
 import { STAFF } from "@/lib/lineCheck";
-import { Camera, Trash2, X, PackageCheck, Plus, ChevronDown, ChevronUp } from "lucide-react";
+import { Camera, Trash2, X, PackageCheck, Plus, ChevronDown, ChevronUp, Pencil, Check as CheckIcon } from "lucide-react";
 
 export const Route = createFileRoute("/receiving")({
   head: () => ({
