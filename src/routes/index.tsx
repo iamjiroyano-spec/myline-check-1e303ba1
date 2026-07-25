@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { AppShell, useShellState, SECTION_ICONS } from "@/components/AppShell";
+import { AppShell, useShellState } from "@/components/AppShell";
 import {
   getEffectiveSections,
   allFlagged,
@@ -8,26 +8,8 @@ import {
   type FlaggedRow,
   type Slot,
 } from "@/lib/lineCheck";
-import { ArrowRight, CheckCircle2, AlertTriangle, Utensils, UserCog, GripVertical } from "lucide-react";
+import { ArrowRight, CheckCircle2, AlertTriangle, UserCog } from "lucide-react";
 import { z } from "zod";
-import {
-  DndContext,
-  PointerSensor,
-  KeyboardSensor,
-  useSensor,
-  useSensors,
-  closestCenter,
-  type DragEndEvent,
-} from "@dnd-kit/core";
-import {
-  SortableContext,
-  arrayMove,
-  rectSortingStrategy,
-  sortableKeyboardCoordinates,
-  useSortable,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-import { getStationOrder, setStationOrder, applyOrder } from "@/lib/order";
 
 
 const dashSearch = z
