@@ -393,6 +393,25 @@ function StationsPanel() {
   const [renamingIdx, setRenamingIdx] = useState<number | null>(null);
   const [renameValue, setRenameValue] = useState("");
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  const onDragEnd = (e: DragEndEvent) => {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    setStations((s) => {
+      const from = s.findIndex((x) => x.name === active.id);
+      const to = s.findIndex((x) => x.name === over.id);
+      if (from < 0 || to < 0) return s;
+      const next = arrayMove(s, from, to);
+      setStationOrder(next.map((x) => x.name));
+      return next;
+    });
+  };
+
+
   useEffect(() => {
     lsStore.setItem(STATIONS_KEY, JSON.stringify(stations));
     if (typeof window !== "undefined")
