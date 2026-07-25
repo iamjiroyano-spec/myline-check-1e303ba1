@@ -1402,6 +1402,8 @@ function SortableCategory({
                 it={it}
                 updateItem={updateItem}
                 removeItem={removeItem}
+                moveItemToCategory={moveItemToCategory}
+                categories={draft.map((c) => c.group)}
                 SHELF_OPTIONS={SHELF_OPTIONS}
                 CONTAINER_OPTIONS={CONTAINER_OPTIONS}
               />
