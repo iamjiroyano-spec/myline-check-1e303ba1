@@ -244,6 +244,16 @@ function SectionPage() {
     }
   }, [commentKey]);
 
+  useEffect(() => {
+    try {
+      const raw = lsStore.getItem(commentPhotosKey);
+      const parsed = raw ? JSON.parse(raw) : [];
+      setCommentPhotos(Array.isArray(parsed) ? parsed.filter((x) => typeof x === "string") : []);
+    } catch {
+      setCommentPhotos([]);
+    }
+  }, [commentPhotosKey]);
+
   const onCommentChange = (value: string) => {
     setComment(value);
     try {
@@ -252,6 +262,30 @@ function SectionPage() {
       window.dispatchEvent(new Event("linecheck:update"));
     } catch {}
   };
+
+  const persistCommentPhotos = (next: string[]) => {
+    setCommentPhotos(next);
+    try {
+      if (next.length) lsStore.setItem(commentPhotosKey, JSON.stringify(next));
+      else lsStore.removeItem(commentPhotosKey);
+      window.dispatchEvent(new Event("linecheck:update"));
+    } catch {}
+  };
+
+  const addCommentPhoto = (file: File) => {
+    const MAX = 8 * 1024 * 1024;
+    if (file.size > MAX) {
+      alert("Image too large (max 8MB).");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = typeof reader.result === "string" ? reader.result : "";
+      if (dataUrl) persistCommentPhotos([...commentPhotos, dataUrl]);
+    };
+    reader.readAsDataURL(file);
+  };
+
 
   const setTemp = (group: string, value: string) => {
     setTemps((prev) => {
