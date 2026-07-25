@@ -135,7 +135,7 @@ function Sidebar({ date, shift }: { date: string; shift: Slot }) {
 
   return (
     <aside
-      className={`sticky top-0 z-20 hidden h-screen shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-all md:flex ${
+      className={`sidebar-shell sticky top-0 z-20 hidden h-screen shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-all md:flex ${
         collapsed ? "w-16" : "w-64"
       }`}
     >
