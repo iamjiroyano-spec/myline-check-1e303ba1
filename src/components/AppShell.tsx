@@ -14,6 +14,7 @@ import {
   LayoutDashboard,
   History,
   Settings,
+  PackageCheck,
   ChevronLeft,
   Calendar,
   Clock,
