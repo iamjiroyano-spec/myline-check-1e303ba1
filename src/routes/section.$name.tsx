@@ -705,17 +705,17 @@ function SectionPage() {
       </div>
 
       {/* Hero card */}
-      <section className="rounded-2xl border border-border bg-card px-6 py-5 shadow-sm">
+      <section className="rounded-2xl border border-border bg-card px-4 py-4 shadow-sm sm:px-6 sm:py-5">
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <h2 className="text-2xl font-extrabold tracking-tight">{section.name}</h2>
             <p className="mt-0.5 text-xs text-muted-foreground">
               {done} of {total} items checked{!editMode && ` · ${shiftLabel}`}
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:gap-3">
             <div
-              className="grid h-14 w-14 place-items-center rounded-full"
+              className="grid h-14 w-14 shrink-0 place-items-center rounded-full"
               style={ringStyle}
               aria-label={`${pct} percent complete`}
             >
@@ -888,7 +888,7 @@ function SectionPage() {
                 borderLeft: `4px solid ${accent}`,
               }}
             >
-              <div className="mb-2 flex items-center justify-between px-1">
+              <div className="mb-2 flex flex-wrap items-center justify-between gap-2 px-1">
                 <h3 className="text-sm font-bold uppercase tracking-[0.14em]" style={{ color: headingColor }}>
                   {cat.group}
                 </h3>
@@ -956,7 +956,7 @@ function SectionPage() {
                       }`}
                     >
                       {(handle) => (<>
-                      <div className="flex items-center gap-3 px-3 py-2.5">
+                      <div className="flex flex-wrap items-center gap-2 px-3 py-2.5 sm:flex-nowrap sm:gap-3">
                       {handle}
 
                       <button
@@ -971,7 +971,7 @@ function SectionPage() {
                         {checked && <Check className="h-4 w-4" strokeWidth={3} />}
                       </button>
 
-                      <div className="min-w-0 flex-1">
+                      <div className="min-w-0 flex-1 basis-[45%]">
                         <p
                           className={`truncate text-sm font-semibold ${
                             checked ? "text-muted-foreground line-through" : "text-foreground"
@@ -989,6 +989,7 @@ function SectionPage() {
                         )}
                       </div>
 
+                      <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-3">
                       <div className="hidden h-1.5 w-28 overflow-hidden rounded-full bg-muted sm:block">
                         <div
                           className="h-full rounded-full transition-all"
@@ -999,7 +1000,7 @@ function SectionPage() {
                         />
                       </div>
 
-                      <div className="relative">
+                      <div className="relative shrink-0">
                         <select
                           value={status}
                           onChange={(ev) => setEntry(cat.group, item.name, occ, { status: ev.target.value })}
@@ -1089,6 +1090,7 @@ function SectionPage() {
                           <FolderInput className="pointer-events-none absolute left-1/2 top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 text-muted-foreground" />
                         </div>
                       )}
+                      </div>
 
                       </div>
                       {flagged && (
@@ -1128,7 +1130,7 @@ function SectionPage() {
 
       {!editMode && (
         <section className="mt-8">
-          <div className="mb-2 flex items-center justify-between px-1">
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2 px-1">
             <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
               Station Comment / Feedback
             </h3>
