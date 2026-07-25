@@ -135,7 +135,7 @@ function Sidebar({ date, shift }: { date: string; shift: Slot }) {
 
   return (
     <aside
-      className={`sticky top-0 z-20 hidden h-screen shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-all md:flex ${
+      className={`sidebar-shell sticky top-0 z-20 hidden h-screen shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-all md:flex ${
         collapsed ? "w-16" : "w-64"
       }`}
     >
@@ -160,7 +160,7 @@ function Sidebar({ date, shift }: { date: string; shift: Slot }) {
 
       <div className="mt-4 flex-1 overflow-y-auto px-3 pb-6" data-tick={tick}>
         {!collapsed && (
-          <p className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+          <p className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-sidebar-foreground/60">
             Stations
           </p>
         )}
@@ -177,8 +177,8 @@ function Sidebar({ date, shift }: { date: string; shift: Slot }) {
                   params={{ name: s.name }}
                   className={`group flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium transition-colors ${
                     active
-                      ? "bg-sidebar-accent text-foreground"
-                      : "text-muted-foreground hover:bg-sidebar-accent hover:text-foreground"
+                      ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
+                      : "text-sidebar-foreground/80 sidebar-hover"
                   }`}
                 >
                   <Icon className="h-4 w-4 shrink-0" />
@@ -239,7 +239,7 @@ function SignOutButton({ collapsed }: { collapsed: boolean }) {
       )}
       <button
         onClick={handle}
-        className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium text-muted-foreground hover:bg-sidebar-accent hover:text-foreground"
+        className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium text-sidebar-foreground/80 sidebar-hover"
       >
         <LogOut className="h-4 w-4" />
         {!collapsed && <span>Sign out</span>}
@@ -265,10 +265,10 @@ function NavItem({
 }) {
   const cls = `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
     active
-      ? "bg-foreground text-background"
+      ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
       : disabled
-        ? "text-muted-foreground/50 cursor-not-allowed"
-        : "text-foreground hover:bg-sidebar-accent"
+        ? "text-sidebar-foreground/40 cursor-not-allowed"
+        : "text-sidebar-foreground sidebar-hover"
   }`;
   if (disabled) {
     return (
