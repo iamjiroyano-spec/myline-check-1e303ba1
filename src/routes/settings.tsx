@@ -460,113 +460,184 @@ function StationsPanel() {
         )}
       </div>
 
-      <ul className="space-y-2">
-        {stations.map((st, idx) => {
-          const Icon = SECTION_ICONS[st.icon] ?? Utensils;
-          const open = expanded === st.name;
-          const isRenaming = renamingIdx === idx;
-          return (
-            <li
-              key={st.name + idx}
-              className="rounded-2xl border border-border bg-card shadow-sm"
-            >
-              <div className="flex items-center gap-3 px-4 py-3">
-                <button
-                  onClick={() => setExpanded(open ? null : st.name)}
-                  className="grid h-6 w-6 place-items-center rounded-md text-muted-foreground hover:bg-muted"
-                  aria-label="Expand"
-                >
-                  {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                </button>
-
-                <IconPicker
-                  value={st.icon}
-                  onChange={(v) =>
-                    setStations((s) =>
-                      s.map((x, i) => (i === idx ? { ...x, icon: v } : x)),
-                    )
-                  }
-                />
-
-                <Icon className="h-4 w-4 text-muted-foreground" />
-                {isRenaming ? (
-                  <input
-                    autoFocus
-                    value={renameValue}
-                    onChange={(e) => {
-                      setRenameValue(e.target.value);
-                      if (renameError) setRenameError(null);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") commitRename(idx);
-                      if (e.key === "Escape") cancelRename();
-                    }}
-                    onBlur={() => commitRename(idx)}
-                    aria-invalid={!!renameError}
-                    className={`min-w-0 flex-1 rounded-md border bg-background px-2 py-1 text-sm font-bold tracking-tight outline-none focus:border-foreground/40 ${renameError ? "border-danger" : "border-border"}`}
-                  />
-                ) : (
-                  <>
-                    <span className="font-bold tracking-tight">{st.name}</span>
-                    <button
-                      onClick={() => startRename(idx)}
-                      className="grid h-7 w-7 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-                      aria-label="Rename"
-                      title="Rename station"
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </button>
-                  </>
-                )}
-
-
-                <span className="ml-auto text-xs text-muted-foreground">
-                  {st.items.length} cats
-                </span>
-                <button
-                  onClick={() => {
-                    if (confirm(`Delete station "${st.name}"? This does not delete its saved check history.`))
-                      setStations((s) => s.filter((_, i) => i !== idx));
-                  }}
-                  className="grid h-7 w-7 place-items-center rounded-md text-muted-foreground hover:bg-danger-soft hover:text-danger"
-                  aria-label="Delete"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
-              {isRenaming && renameError && (
-                <p role="alert" className="border-t border-border px-4 py-2 text-sm font-medium text-danger">
-                  {renameError}
-                </p>
-              )}
-              {open && (
-                <div className="border-t border-border px-12 py-3">
-                  {st.items.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">
-                      No categories yet. Open this station from the dashboard and use{" "}
-                      <span className="font-semibold">Edit Categories</span> to add items.
-                    </p>
-                  ) : (
-                    <ul className="grid grid-cols-2 gap-1.5 text-xs">
-                      {st.items.map((it) => (
-                        <li
-                          key={it.name}
-                          className="rounded-md bg-muted/50 px-2 py-1 text-muted-foreground"
-                        >
-                          {it.name}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              )}
-            </li>
-          );
-        })}
-      </ul>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={onDragEnd}
+      >
+        <SortableContext
+          items={stations.map((s) => s.name)}
+          strategy={verticalListSortingStrategy}
+        >
+          <ul className="space-y-2">
+            {stations.map((st, idx) => (
+              <SortableStationRow
+                key={st.name}
+                st={st}
+                idx={idx}
+                open={expanded === st.name}
+                isRenaming={renamingIdx === idx}
+                renameValue={renameValue}
+                renameError={renameError}
+                setRenameValue={setRenameValue}
+                setRenameError={setRenameError}
+                commitRename={commitRename}
+                cancelRename={cancelRename}
+                startRename={startRename}
+                setExpanded={setExpanded}
+                setStations={setStations}
+              />
+            ))}
+          </ul>
+        </SortableContext>
+      </DndContext>
     </div>
   );
 }
+
+function SortableStationRow({
+  st,
+  idx,
+  open,
+  isRenaming,
+  renameValue,
+  renameError,
+  setRenameValue,
+  setRenameError,
+  commitRename,
+  cancelRename,
+  startRename,
+  setExpanded,
+  setStations,
+}: {
+  st: LocalStation;
+  idx: number;
+  open: boolean;
+  isRenaming: boolean;
+  renameValue: string;
+  renameError: string | null;
+  setRenameValue: (v: string) => void;
+  setRenameError: (v: string | null) => void;
+  commitRename: (idx: number) => void;
+  cancelRename: () => void;
+  startRename: (idx: number) => void;
+  setExpanded: (v: string | null) => void;
+  setStations: React.Dispatch<React.SetStateAction<LocalStation[]>>;
+}) {
+  const Icon = SECTION_ICONS[st.icon] ?? Utensils;
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id: st.name });
+
+  return (
+    <li
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.6 : 1,
+        zIndex: isDragging ? 20 : undefined,
+      }}
+      className="relative rounded-2xl border border-border bg-card shadow-sm"
+    >
+      <div className="flex items-center gap-3 px-4 py-3">
+        <button
+          {...attributes}
+          {...listeners}
+          className="grid h-7 w-6 cursor-grab touch-none place-items-center rounded-md text-muted-foreground hover:bg-muted active:cursor-grabbing"
+          aria-label="Drag to reorder"
+          title="Drag to reorder"
+        >
+          <GripVertical className="h-4 w-4" />
+        </button>
+
+        <button
+          onClick={() => setExpanded(open ? null : st.name)}
+          className="grid h-6 w-6 place-items-center rounded-md text-muted-foreground hover:bg-muted"
+          aria-label="Expand"
+        >
+          {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+        </button>
+
+        <IconPicker
+          value={st.icon}
+          onChange={(v) =>
+            setStations((s) => s.map((x, i) => (i === idx ? { ...x, icon: v } : x)))
+          }
+        />
+
+        <Icon className="h-4 w-4 text-muted-foreground" />
+        {isRenaming ? (
+          <input
+            autoFocus
+            value={renameValue}
+            onChange={(e) => {
+              setRenameValue(e.target.value);
+              if (renameError) setRenameError(null);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") commitRename(idx);
+              if (e.key === "Escape") cancelRename();
+            }}
+            onBlur={() => commitRename(idx)}
+            aria-invalid={!!renameError}
+            className={`min-w-0 flex-1 rounded-md border bg-background px-2 py-1 text-sm font-bold tracking-tight outline-none focus:border-foreground/40 ${renameError ? "border-danger" : "border-border"}`}
+          />
+        ) : (
+          <>
+            <span className="font-bold tracking-tight">{st.name}</span>
+            <button
+              onClick={() => startRename(idx)}
+              className="grid h-7 w-7 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+              aria-label="Rename"
+              title="Rename station"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </button>
+          </>
+        )}
+
+        <span className="ml-auto text-xs text-muted-foreground">{st.items.length} cats</span>
+        <button
+          onClick={() => {
+            if (confirm(`Delete station "${st.name}"? This does not delete its saved check history.`))
+              setStations((s) => s.filter((_, i) => i !== idx));
+          }}
+          className="grid h-7 w-7 place-items-center rounded-md text-muted-foreground hover:bg-danger-soft hover:text-danger"
+          aria-label="Delete"
+        >
+          <Trash2 className="h-4 w-4" />
+        </button>
+      </div>
+      {isRenaming && renameError && (
+        <p role="alert" className="border-t border-border px-4 py-2 text-sm font-medium text-danger">
+          {renameError}
+        </p>
+      )}
+      {open && (
+        <div className="border-t border-border px-12 py-3">
+          {st.items.length === 0 ? (
+            <p className="text-xs text-muted-foreground">
+              No categories yet. Open this station from the dashboard and use{" "}
+              <span className="font-semibold">Edit Categories</span> to add items.
+            </p>
+          ) : (
+            <ul className="grid grid-cols-2 gap-1.5 text-xs">
+              {st.items.map((it) => (
+                <li
+                  key={it.name}
+                  className="rounded-md bg-muted/50 px-2 py-1 text-muted-foreground"
+                >
+                  {it.name}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </li>
+  );
+}
+
 
 /* ============= ICON PICKER ============= */
 
