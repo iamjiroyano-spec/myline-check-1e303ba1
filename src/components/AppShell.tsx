@@ -36,6 +36,9 @@ import {
   Sun,
   Monitor,
   Check,
+  Menu,
+  X,
+
 } from "lucide-react";
 
 const SECTION_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
