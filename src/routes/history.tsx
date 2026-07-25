@@ -462,17 +462,14 @@ function StationRow({
   slot,
   expanded,
   onToggle,
-  onShare,
-  copied,
 }: {
   station: ShiftHistoryStation;
   date: string;
   slot: Slot;
   expanded: boolean;
   onToggle: () => void;
-  onShare: () => void;
-  copied: boolean;
 }) {
+
   return (
     <div className="rounded-2xl border border-border bg-muted/30">
       <button
