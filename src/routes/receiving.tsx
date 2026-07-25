@@ -611,3 +611,109 @@ function ChecklistView({
     </div>
   );
 }
+
+function EditableChecklistBlock({
+  title, items, checks, onToggle, onAdd, onRename, onRemove, children,
+}: {
+  title: string;
+  items: string[];
+  checks: Checks;
+  onToggle: (key: string) => void;
+  onAdd: (name: string) => void;
+  onRename: (oldName: string, newName: string) => void;
+  onRemove: (name: string) => void;
+  children?: React.ReactNode;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [newItem, setNewItem] = useState("");
+  const [editKey, setEditKey] = useState<string | null>(null);
+  const [editVal, setEditVal] = useState("");
+
+  function startEdit(name: string) {
+    setEditKey(name);
+    setEditVal(name);
+  }
+  function commitEdit() {
+    if (editKey != null) onRename(editKey, editVal);
+    setEditKey(null);
+    setEditVal("");
+  }
+
+  return (
+    <div className="mt-4 rounded-xl border border-border bg-background/40 p-3">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+        <button
+          type="button"
+          onClick={() => setEditing((v) => !v)}
+          className="inline-flex items-center gap-1 rounded-md border border-input bg-background px-2 py-1 text-xs font-medium hover:bg-accent"
+        >
+          {editing ? <><CheckIcon className="h-3 w-3" /> Done</> : <><Pencil className="h-3 w-3" /> Edit</>}
+        </button>
+      </div>
+      {children}
+      <ul className="mt-2 space-y-1.5">
+        {items.map((it) => (
+          <li key={it} className="flex items-center gap-2">
+            {editing ? (
+              editKey === it ? (
+                <>
+                  <input
+                    autoFocus
+                    value={editVal}
+                    onChange={(e) => setEditVal(e.target.value)}
+                    onBlur={commitEdit}
+                    onKeyDown={(e) => { if (e.key === "Enter") commitEdit(); if (e.key === "Escape") { setEditKey(null); setEditVal(""); } }}
+                    className="flex-1 rounded-md border border-input bg-background px-2 py-1 text-sm outline-none focus:border-foreground/40"
+                  />
+                  <button type="button" onClick={commitEdit} className="rounded-md p-1 text-primary hover:bg-accent" aria-label="Save">
+                    <CheckIcon className="h-4 w-4" />
+                  </button>
+                </>
+              ) : (
+                <>
+                  <span className="flex-1 text-sm text-foreground">{it}</span>
+                  <button type="button" onClick={() => startEdit(it)} className="rounded-md p-1 text-muted-foreground hover:bg-accent" aria-label="Rename">
+                    <Pencil className="h-3.5 w-3.5" />
+                  </button>
+                  <button type="button" onClick={() => onRemove(it)} className="rounded-md p-1 text-destructive hover:bg-destructive/10" aria-label="Remove">
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </>
+              )
+            ) : (
+              <label className="flex cursor-pointer items-center gap-2 text-sm text-foreground">
+                <input
+                  type="checkbox"
+                  checked={!!checks[it]}
+                  onChange={() => onToggle(it)}
+                  className="h-4 w-4 rounded border-input accent-primary"
+                />
+                <span>{it}</span>
+              </label>
+            )}
+          </li>
+        ))}
+      </ul>
+      {editing && (
+        <div className="mt-3 flex items-center gap-2">
+          <input
+            type="text"
+            value={newItem}
+            onChange={(e) => setNewItem(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") { onAdd(newItem); setNewItem(""); } }}
+            placeholder="New checklist item…"
+            className="flex-1 rounded-md border border-input bg-background px-2 py-1 text-sm outline-none focus:border-foreground/40"
+          />
+          <button
+            type="button"
+            onClick={() => { onAdd(newItem); setNewItem(""); }}
+            className="inline-flex items-center gap-1 rounded-md bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground hover:opacity-90"
+          >
+            <Plus className="h-3 w-3" /> Add
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
