@@ -9,8 +9,8 @@ import { Camera, Trash2, X, PackageCheck, Plus, ChevronDown, ChevronUp } from "l
 export const Route = createFileRoute("/receiving")({
   head: () => ({
     meta: [
-      { title: "Receiving Checklist — Line Check 2026" },
-      { name: "description", content: "Log incoming deliveries with photos, car temperature, driver, bill number and receiver." },
+      { title: "Store Receiving Item Checklist — Line Check 2026" },
+      { name: "description", content: "Log incoming deliveries with temperature, quantity, and quality checks plus proof photos." },
     ],
   }),
   component: ReceivingPage,
@@ -18,18 +18,46 @@ export const Route = createFileRoute("/receiving")({
 
 const LS_KEY = "linecheck:receiving";
 
+/* --- Checklist definitions (mirrors the paper form) --- */
+const TEMP_ITEMS = [
+  "Cold items: 0°C to 5°C",
+  "Frozen items -18°C or lower",
+  "Hot items: 57°C or higher",
+];
+const QUANTITY_ITEMS = [
+  "All items delivered",
+  "Quantities match order",
+  "No missing, extra, or incorrect items",
+];
+const QUALITY_ITEMS = [
+  "Packing clean and undamaged",
+  "Delivery box is cleaned and has no bad odor",
+  "No tempering or contamination",
+  "Items in good condition",
+  "Expiry date is valid",
+];
+
+type Checks = Record<string, boolean>;
+
 type ReceivingRecord = {
   id: string;
-  createdAt: string; // ISO
-  date: string;      // YYYY-MM-DD
-  time: string;      // HH:mm
+  createdAt: string;
+  date: string;
+  time: string;
   branch: string;
-  checkedBy: string;
   driver: string;
-  billNumber: string;
-  carTemp: string;   // free text with unit
-  notes: string;
-  photos: string[];  // base64 data urls
+  deliveryNote: string;   // Delivery Note / Invoice #
+  purchaseOrder: string;  // Purchase Order #
+  chillerCarTemp: string; // °C
+  productTemp: string;    // °C
+  tempChecks: Checks;
+  quantityChecks: Checks;
+  qualityChecks: Checks;
+  receiverName: string;
+  signature: string;
+  comments: string;
+  checkedBy: string;      // kept for filtering / history
+  photos: string[];
 };
 
 function loadRecords(): ReceivingRecord[] {
@@ -42,11 +70,9 @@ function loadRecords(): ReceivingRecord[] {
     return [];
   }
 }
-
 function saveRecords(list: ReceivingRecord[]) {
   lsStore.setItem(LS_KEY, JSON.stringify(list));
 }
-
 function nowParts() {
   const d = new Date();
   const pad = (n: number) => String(n).padStart(2, "0");
@@ -55,9 +81,12 @@ function nowParts() {
     time: `${pad(d.getHours())}:${pad(d.getMinutes())}`,
   };
 }
+function emptyChecks(items: string[]): Checks {
+  return Object.fromEntries(items.map((i) => [i, false]));
+}
 
 function ReceivingPage() {
-  const shell = useShellState("Receiving Checklist");
+  const shell = useShellState("Store Receiving Item Checklist");
   const [records, setRecords] = useState<ReceivingRecord[]>(() => loadRecords());
   const [form, setForm] = useState(() => {
     const { date, time } = nowParts();
@@ -65,11 +94,18 @@ function ReceivingPage() {
       date,
       time,
       branch: "",
-      checkedBy: "",
       driver: "",
-      billNumber: "",
-      carTemp: "",
-      notes: "",
+      deliveryNote: "",
+      purchaseOrder: "",
+      chillerCarTemp: "",
+      productTemp: "",
+      tempChecks: emptyChecks(TEMP_ITEMS),
+      quantityChecks: emptyChecks(QUANTITY_ITEMS),
+      qualityChecks: emptyChecks(QUALITY_ITEMS),
+      receiverName: "",
+      signature: "",
+      comments: "",
+      checkedBy: "",
       photos: [] as string[],
     };
   });
@@ -100,9 +136,12 @@ function ReceivingPage() {
       console.warn("photo failed", e);
     }
   }
-
   function removePhoto(idx: number) {
     setForm((f) => ({ ...f, photos: f.photos.filter((_, i) => i !== idx) }));
+  }
+
+  function toggle(group: "tempChecks" | "quantityChecks" | "qualityChecks", key: string) {
+    setForm((f) => ({ ...f, [group]: { ...f[group], [key]: !f[group][key] } }));
   }
 
   function resetForm() {
@@ -110,18 +149,25 @@ function ReceivingPage() {
     setForm({
       date, time,
       branch: "",
-      checkedBy: "",
       driver: "",
-      billNumber: "",
-      carTemp: "",
-      notes: "",
+      deliveryNote: "",
+      purchaseOrder: "",
+      chillerCarTemp: "",
+      productTemp: "",
+      tempChecks: emptyChecks(TEMP_ITEMS),
+      quantityChecks: emptyChecks(QUANTITY_ITEMS),
+      qualityChecks: emptyChecks(QUALITY_ITEMS),
+      receiverName: "",
+      signature: "",
+      comments: "",
+      checkedBy: "",
       photos: [],
     });
   }
 
   function submit() {
-    if (!form.checkedBy.trim()) {
-      alert("Please select who checked the delivery.");
+    if (!form.receiverName.trim() && !form.checkedBy.trim()) {
+      alert("Please enter the Receiver name (or select who checked).");
       return;
     }
     const rec: ReceivingRecord = {
@@ -130,11 +176,18 @@ function ReceivingPage() {
       date: form.date,
       time: form.time,
       branch: form.branch.trim(),
-      checkedBy: form.checkedBy.trim(),
       driver: form.driver.trim(),
-      billNumber: form.billNumber.trim(),
-      carTemp: form.carTemp.trim(),
-      notes: form.notes.trim(),
+      deliveryNote: form.deliveryNote.trim(),
+      purchaseOrder: form.purchaseOrder.trim(),
+      chillerCarTemp: form.chillerCarTemp.trim(),
+      productTemp: form.productTemp.trim(),
+      tempChecks: form.tempChecks,
+      quantityChecks: form.quantityChecks,
+      qualityChecks: form.qualityChecks,
+      receiverName: form.receiverName.trim(),
+      signature: form.signature.trim(),
+      comments: form.comments.trim(),
+      checkedBy: (form.checkedBy || form.receiverName).trim(),
       photos: form.photos,
     };
     const next = [rec, ...records];
@@ -150,8 +203,6 @@ function ReceivingPage() {
     saveRecords(next);
   }
 
-  const staff = STAFF;
-
   return (
     <AppShell {...shell}>
       <div className="mx-auto w-full max-w-4xl px-4 py-6">
@@ -160,9 +211,9 @@ function ReceivingPage() {
             <PackageCheck className="h-5 w-5" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Receiving Checklist</h1>
+            <h1 className="text-2xl font-bold tracking-tight">Store Receiving Item Checklist</h1>
             <p className="text-sm text-muted-foreground">
-              Log incoming deliveries with proof photos and driver details.
+              Temperature, quantity and quality checks for every incoming delivery.
             </p>
           </div>
         </header>
@@ -173,79 +224,94 @@ function ReceivingPage() {
             New delivery
           </h2>
 
+          {/* Header fields */}
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label="Date">
-              <input
-                type="date"
-                value={form.date}
+              <input type="date" value={form.date}
                 onChange={(e) => setForm({ ...form, date: e.target.value })}
-                className={inputCls}
-              />
+                className={inputCls} />
             </Field>
             <Field label="Time">
-              <input
-                type="time"
-                value={form.time}
+              <input type="time" value={form.time}
                 onChange={(e) => setForm({ ...form, time: e.target.value })}
-                className={inputCls}
-              />
+                className={inputCls} />
             </Field>
             <Field label="Branch">
-              <input
-                type="text"
-                value={form.branch}
+              <input type="text" value={form.branch}
                 onChange={(e) => setForm({ ...form, branch: e.target.value })}
-                placeholder="e.g. Main Kitchen"
-                className={inputCls}
-              />
+                placeholder="e.g. Main Kitchen" className={inputCls} />
             </Field>
-            <Field label="Checked by *">
-              <select
-                value={form.checkedBy}
+            <Field label="Driver's Name">
+              <input type="text" value={form.driver}
+                onChange={(e) => setForm({ ...form, driver: e.target.value })}
+                placeholder="Driver name" className={inputCls} />
+            </Field>
+            <Field label="Delivery Note / Invoice #">
+              <input type="text" value={form.deliveryNote}
+                onChange={(e) => setForm({ ...form, deliveryNote: e.target.value })}
+                placeholder="e.g. W.N.R-03-4708-4709" className={inputCls} />
+            </Field>
+            <Field label="Purchase Order #">
+              <input type="text" value={form.purchaseOrder}
+                onChange={(e) => setForm({ ...form, purchaseOrder: e.target.value })}
+                placeholder="Optional" className={inputCls} />
+            </Field>
+          </div>
+
+          {/* 1. Temperature Check */}
+          <ChecklistBlock title="1. Temperature Check">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="Chiller Car Temp (°C)  · target 2°C to 5°C">
+                <input type="text" value={form.chillerCarTemp}
+                  onChange={(e) => setForm({ ...form, chillerCarTemp: e.target.value })}
+                  placeholder="e.g. 3" className={inputCls} />
+              </Field>
+              <Field label="Product Temp (°C)">
+                <input type="text" value={form.productTemp}
+                  onChange={(e) => setForm({ ...form, productTemp: e.target.value })}
+                  placeholder="e.g. 4" className={inputCls} />
+              </Field>
+            </div>
+            <CheckList items={TEMP_ITEMS} checks={form.tempChecks}
+              onToggle={(k) => toggle("tempChecks", k)} />
+          </ChecklistBlock>
+
+          {/* 2. Quantity Check */}
+          <ChecklistBlock title="2. Quantity Check">
+            <CheckList items={QUANTITY_ITEMS} checks={form.quantityChecks}
+              onToggle={(k) => toggle("quantityChecks", k)} />
+          </ChecklistBlock>
+
+          {/* 3. Quality Check */}
+          <ChecklistBlock title="3. Quality Check">
+            <CheckList items={QUALITY_ITEMS} checks={form.qualityChecks}
+              onToggle={(k) => toggle("qualityChecks", k)} />
+          </ChecklistBlock>
+
+          {/* Receiver / Signature / Comments */}
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <Field label="Receiver by (Name)">
+              <input type="text" value={form.receiverName}
+                onChange={(e) => setForm({ ...form, receiverName: e.target.value })}
+                placeholder="e.g. Abdulla, Hamiya, Alam, Rasal" className={inputCls} />
+            </Field>
+            <Field label="Checked by (team member)">
+              <select value={form.checkedBy}
                 onChange={(e) => setForm({ ...form, checkedBy: e.target.value })}
-                className={inputCls}
-              >
+                className={inputCls}>
                 <option value="">Select team member…</option>
-                {staff.map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
+                {STAFF.map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
             </Field>
-            <Field label="Driver">
-              <input
-                type="text"
-                value={form.driver}
-                onChange={(e) => setForm({ ...form, driver: e.target.value })}
-                placeholder="Driver name"
-                className={inputCls}
-              />
+            <Field label="Signature">
+              <input type="text" value={form.signature}
+                onChange={(e) => setForm({ ...form, signature: e.target.value })}
+                placeholder="Typed signature" className={inputCls} />
             </Field>
-            <Field label="Bill / Invoice #">
-              <input
-                type="text"
-                value={form.billNumber}
-                onChange={(e) => setForm({ ...form, billNumber: e.target.value })}
-                placeholder="e.g. INV-00123"
-                className={inputCls}
-              />
-            </Field>
-            <Field label="Car temperature">
-              <input
-                type="text"
-                value={form.carTemp}
-                onChange={(e) => setForm({ ...form, carTemp: e.target.value })}
-                placeholder="e.g. 3°C"
-                className={inputCls}
-              />
-            </Field>
-            <Field label="Notes">
-              <input
-                type="text"
-                value={form.notes}
-                onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                placeholder="Optional"
-                className={inputCls}
-              />
+            <Field label="Comments">
+              <input type="text" value={form.comments}
+                onChange={(e) => setForm({ ...form, comments: e.target.value })}
+                placeholder="e.g. Everything is OK" className={inputCls} />
             </Field>
           </div>
 
@@ -258,16 +324,8 @@ function ReceivingPage() {
               <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-input bg-background px-3 py-1.5 text-sm font-medium hover:bg-accent">
                 <Camera className="h-4 w-4" />
                 Add photo
-                <input
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  className="hidden"
-                  onChange={(e) => {
-                    addPhoto(e.target.files?.[0]);
-                    e.target.value = "";
-                  }}
-                />
+                <input type="file" accept="image/*" capture="environment" className="hidden"
+                  onChange={(e) => { addPhoto(e.target.files?.[0]); e.target.value = ""; }} />
               </label>
             </div>
             {form.photos.length === 0 ? (
@@ -278,17 +336,11 @@ function ReceivingPage() {
               <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
                 {form.photos.map((src, i) => (
                   <div key={i} className="relative aspect-square overflow-hidden rounded-lg border border-border">
-                    <img
-                      src={src}
-                      alt={`Delivery photo ${i + 1}`}
+                    <img src={src} alt={`Delivery photo ${i + 1}`}
                       className="h-full w-full cursor-zoom-in object-cover"
-                      onClick={() => setViewer(src)}
-                    />
-                    <button
-                      onClick={() => removePhoto(i)}
-                      aria-label="Remove photo"
-                      className="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white hover:bg-black/80"
-                    >
+                      onClick={() => setViewer(src)} />
+                    <button onClick={() => removePhoto(i)} aria-label="Remove photo"
+                      className="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white hover:bg-black/80">
                       <X className="h-3 w-3" />
                     </button>
                   </div>
@@ -298,16 +350,12 @@ function ReceivingPage() {
           </div>
 
           <div className="mt-4 flex justify-end gap-2">
-            <button
-              onClick={resetForm}
-              className="rounded-lg border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-accent"
-            >
+            <button onClick={resetForm}
+              className="rounded-lg border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-accent">
               Clear
             </button>
-            <button
-              onClick={submit}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
-            >
+            <button onClick={submit}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90">
               <Plus className="h-4 w-4" />
               Save delivery
             </button>
@@ -329,19 +377,16 @@ function ReceivingPage() {
                 const open = expanded === r.id;
                 return (
                   <li key={r.id} className="rounded-2xl border border-border bg-card">
-                    <button
-                      onClick={() => setExpanded(open ? null : r.id)}
-                      className="flex w-full items-center gap-3 px-4 py-3 text-left"
-                    >
+                    <button onClick={() => setExpanded(open ? null : r.id)}
+                      className="flex w-full items-center gap-3 px-4 py-3 text-left">
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-semibold text-foreground">
-                          {r.date} · {r.time}
-                          {r.branch ? ` · ${r.branch}` : ""}
+                          {r.date} · {r.time}{r.branch ? ` · ${r.branch}` : ""}
                         </p>
                         <p className="truncate text-xs text-muted-foreground">
-                          Checked by {r.checkedBy || "—"}
+                          Receiver: {r.receiverName || r.checkedBy || "—"}
                           {r.driver ? ` · Driver: ${r.driver}` : ""}
-                          {r.billNumber ? ` · Bill: ${r.billNumber}` : ""}
+                          {r.deliveryNote ? ` · Note: ${r.deliveryNote}` : ""}
                         </p>
                       </div>
                       {r.photos.length > 0 && (
@@ -353,41 +398,45 @@ function ReceivingPage() {
                     </button>
 
                     {open && (
-                      <div className="border-t border-border px-4 py-3">
+                      <div className="space-y-4 border-t border-border px-4 py-3">
                         <dl className="grid gap-2 text-sm sm:grid-cols-2">
-                          <Info label="Branch" value={r.branch} />
-                          <Info label="Checked by" value={r.checkedBy} />
-                          <Info label="Driver" value={r.driver} />
-                          <Info label="Bill #" value={r.billNumber} />
-                          <Info label="Car temp" value={r.carTemp} />
                           <Info label="Date / Time" value={`${r.date} ${r.time}`} />
-                          {r.notes && (
-                            <div className="sm:col-span-2">
-                              <dt className="text-xs uppercase tracking-wide text-muted-foreground">Notes</dt>
-                              <dd className="text-foreground">{r.notes}</dd>
-                            </div>
-                          )}
+                          <Info label="Branch" value={r.branch} />
+                          <Info label="Driver" value={r.driver} />
+                          <Info label="Delivery Note / Invoice #" value={r.deliveryNote} />
+                          <Info label="Purchase Order #" value={r.purchaseOrder} />
+                          <Info label="Chiller Car Temp" value={r.chillerCarTemp ? `${r.chillerCarTemp} °C` : ""} />
+                          <Info label="Product Temp" value={r.productTemp ? `${r.productTemp} °C` : ""} />
+                          <Info label="Checked by" value={r.checkedBy} />
+                          <Info label="Receiver" value={r.receiverName} />
+                          <Info label="Signature" value={r.signature} />
                         </dl>
 
+                        <ChecklistView title="1. Temperature Check" items={TEMP_ITEMS} checks={r.tempChecks} />
+                        <ChecklistView title="2. Quantity Check" items={QUANTITY_ITEMS} checks={r.quantityChecks} />
+                        <ChecklistView title="3. Quality Check" items={QUALITY_ITEMS} checks={r.qualityChecks} />
+
+                        {r.comments && (
+                          <div>
+                            <div className="text-xs uppercase tracking-wide text-muted-foreground">Comments</div>
+                            <div className="text-sm text-foreground">{r.comments}</div>
+                          </div>
+                        )}
+
                         {r.photos.length > 0 && (
-                          <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
+                          <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
                             {r.photos.map((src, i) => (
-                              <button
-                                key={i}
-                                onClick={() => setViewer(src)}
-                                className="aspect-square overflow-hidden rounded-lg border border-border"
-                              >
+                              <button key={i} onClick={() => setViewer(src)}
+                                className="aspect-square overflow-hidden rounded-lg border border-border">
                                 <img src={src} alt={`Photo ${i + 1}`} className="h-full w-full object-cover" />
                               </button>
                             ))}
                           </div>
                         )}
 
-                        <div className="mt-3 flex justify-end">
-                          <button
-                            onClick={() => deleteRecord(r.id)}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/10"
-                          >
+                        <div className="flex justify-end">
+                          <button onClick={() => deleteRecord(r.id)}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/10">
                             <Trash2 className="h-3.5 w-3.5" />
                             Delete
                           </button>
@@ -403,18 +452,11 @@ function ReceivingPage() {
       </div>
 
       {viewer && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          onClick={() => setViewer(null)}
-          className="fixed inset-0 z-50 grid place-items-center bg-black/80 p-4"
-        >
+        <div role="dialog" aria-modal="true" onClick={() => setViewer(null)}
+          className="fixed inset-0 z-50 grid place-items-center bg-black/80 p-4">
           <img src={viewer} alt="Photo" className="max-h-full max-w-full rounded-lg" />
-          <button
-            onClick={(e) => { e.stopPropagation(); setViewer(null); }}
-            aria-label="Close"
-            className="absolute right-4 top-4 rounded-full bg-white/90 p-2 text-black hover:bg-white"
-          >
+          <button onClick={(e) => { e.stopPropagation(); setViewer(null); }} aria-label="Close"
+            className="absolute right-4 top-4 rounded-full bg-white/90 p-2 text-black hover:bg-white">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -442,6 +484,57 @@ function Info({ label, value }: { label: string; value?: string }) {
     <div>
       <dt className="text-xs uppercase tracking-wide text-muted-foreground">{label}</dt>
       <dd className="text-foreground">{value || "—"}</dd>
+    </div>
+  );
+}
+
+function ChecklistBlock({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="mt-4 rounded-xl border border-border bg-background/40 p-3">
+      <h3 className="mb-2 text-sm font-semibold text-foreground">{title}</h3>
+      {children}
+    </div>
+  );
+}
+
+function CheckList({
+  items, checks, onToggle,
+}: { items: string[]; checks: Checks; onToggle: (key: string) => void }) {
+  return (
+    <ul className="mt-2 space-y-1.5">
+      {items.map((it) => (
+        <li key={it}>
+          <label className="flex cursor-pointer items-center gap-2 text-sm text-foreground">
+            <input
+              type="checkbox"
+              checked={!!checks[it]}
+              onChange={() => onToggle(it)}
+              className="h-4 w-4 rounded border-input accent-primary"
+            />
+            <span>{it}</span>
+          </label>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function ChecklistView({
+  title, items, checks,
+}: { title: string; items: string[]; checks: Checks }) {
+  return (
+    <div>
+      <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{title}</div>
+      <ul className="space-y-1 text-sm">
+        {items.map((it) => (
+          <li key={it} className="flex items-center gap-2">
+            <span className={`grid h-4 w-4 place-items-center rounded border ${checks?.[it] ? "border-primary bg-primary text-primary-foreground" : "border-input bg-background"}`}>
+              {checks?.[it] ? "✓" : ""}
+            </span>
+            <span>{it}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
