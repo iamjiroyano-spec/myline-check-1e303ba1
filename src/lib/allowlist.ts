@@ -1,9 +1,10 @@
 import { supabase } from "@/integrations/supabase/client";
 
-export const ADMIN_EMAIL = "iamjiroyano@gmail.com";
+export const ADMIN_EMAILS = ["iamjiroyano@gmail.com", "hajime015@gmail.com"];
+export const ADMIN_EMAIL = ADMIN_EMAILS[0];
 
 export function isAdminEmail(email: string | null | undefined): boolean {
-  return (email || "").trim().toLowerCase() === ADMIN_EMAIL;
+  return ADMIN_EMAILS.includes((email || "").trim().toLowerCase());
 }
 
 /** Returns true if the given email is on the allowed_emails list (or is the admin). */
