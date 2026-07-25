@@ -87,7 +87,7 @@ function loadSectionStruct(name: string, fallback: EditCategory[]): EditCategory
   return fallback;
 }
 
-export const Route = createFileRoute("/section/$name")({
+export const Route = createFileRoute("/$name")({
   validateSearch: (s: Record<string, unknown>) =>
     z
       .object({
