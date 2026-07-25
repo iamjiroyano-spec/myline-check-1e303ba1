@@ -464,7 +464,7 @@ function SectionPage() {
           : c,
       ),
     );
-  const moveItem = (ci: number, ii: number, toCi: number) =>
+  const moveItemToCategory = (ci: number, ii: number, toCi: number) =>
     setDraft((d) => {
       if (toCi === ci || toCi < 0 || toCi >= d.length) return d;
       const item = d[ci]?.items[ii];
