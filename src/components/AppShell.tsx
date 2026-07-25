@@ -239,7 +239,7 @@ function SignOutButton({ collapsed }: { collapsed: boolean }) {
       )}
       <button
         onClick={handle}
-        className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium text-muted-foreground hover:bg-sidebar-accent hover:text-foreground"
+        className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium text-sidebar-foreground/80 sidebar-hover"
       >
         <LogOut className="h-4 w-4" />
         {!collapsed && <span>Sign out</span>}
