@@ -165,7 +165,10 @@ function SharedView() {
         .filter(([, v]) => v && String(v).trim().length > 0)
         .map(([group, value]) => ({ group, value: String(value) }));
       const comment = (s.comment || "").trim();
-      if (allItems.length || temps.length || comment) {
+      const commentPhotos = Array.isArray(s.commentPhotos)
+        ? s.commentPhotos.filter((p) => typeof p === "string" && p.length > 0)
+        : [];
+      if (allItems.length || temps.length || comment || commentPhotos.length) {
         out.push({
           section: s.name,
           categories,
@@ -176,8 +179,10 @@ function SharedView() {
           temps,
           tempUnit: s.tempUnit ?? "F",
           comment,
+          commentPhotos,
         });
       }
+
     }
     return out;
   }, [data]);
