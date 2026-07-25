@@ -1077,11 +1077,11 @@ function SectionPage() {
                             aria-label={`Move ${item.name} to another category`}
                             className="h-7 w-7 cursor-pointer appearance-none rounded-full border border-transparent bg-transparent text-transparent hover:bg-accent"
                           >
-                            <option value="">Move to…</option>
+                            <option value="" className="bg-popover text-popover-foreground">Move to…</option>
                             {struct
                               .filter((c) => c.group !== cat.group)
                               .map((c) => (
-                                <option key={c.group} value={c.group}>
+                                <option key={c.group} value={c.group} className="bg-popover text-popover-foreground">
                                   {c.group}
                                 </option>
                               ))}
