@@ -705,17 +705,17 @@ function SectionPage() {
       </div>
 
       {/* Hero card */}
-      <section className="rounded-2xl border border-border bg-card px-6 py-5 shadow-sm">
+      <section className="rounded-2xl border border-border bg-card px-4 py-4 shadow-sm sm:px-6 sm:py-5">
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <h2 className="text-2xl font-extrabold tracking-tight">{section.name}</h2>
             <p className="mt-0.5 text-xs text-muted-foreground">
               {done} of {total} items checked{!editMode && ` · ${shiftLabel}`}
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:gap-3">
             <div
-              className="grid h-14 w-14 place-items-center rounded-full"
+              className="grid h-14 w-14 shrink-0 place-items-center rounded-full"
               style={ringStyle}
               aria-label={`${pct} percent complete`}
             >
@@ -888,7 +888,7 @@ function SectionPage() {
                 borderLeft: `4px solid ${accent}`,
               }}
             >
-              <div className="mb-2 flex items-center justify-between px-1">
+              <div className="mb-2 flex flex-wrap items-center justify-between gap-2 px-1">
                 <h3 className="text-sm font-bold uppercase tracking-[0.14em]" style={{ color: headingColor }}>
                   {cat.group}
                 </h3>
@@ -1130,7 +1130,7 @@ function SectionPage() {
 
       {!editMode && (
         <section className="mt-8">
-          <div className="mb-2 flex items-center justify-between px-1">
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2 px-1">
             <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
               Station Comment / Feedback
             </h3>

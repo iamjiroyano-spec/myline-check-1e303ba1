@@ -106,7 +106,7 @@ export function AppShell({
           member={member}
           setMember={setMember}
         />
-        <div className="min-w-0 flex-1 px-6 py-6 lg:px-10 lg:py-8">{children}</div>
+        <div className="min-w-0 flex-1 px-4 py-4 sm:px-6 sm:py-6 lg:px-10 lg:py-8">{children}</div>
       </div>
     </div>
   );
@@ -318,9 +318,9 @@ function TopBar({
     year: "numeric",
   });
   return (
-    <header className="sticky top-0 z-10 flex flex-wrap items-center gap-3 border-b border-border bg-background/85 px-6 py-4 backdrop-blur lg:px-10">
-      <h1 className="text-lg font-bold tracking-tight text-foreground">{title}</h1>
-      <div className="ml-auto flex flex-wrap items-center gap-2">
+    <header className="sticky top-0 z-10 flex flex-wrap items-center gap-2 border-b border-border bg-background/85 px-4 py-3 backdrop-blur sm:gap-3 sm:px-6 sm:py-4 lg:px-10">
+      <h1 className="min-w-0 flex-1 truncate text-base font-bold tracking-tight text-foreground sm:flex-none sm:text-lg">{title}</h1>
+      <div className="ml-auto flex w-full flex-wrap items-center gap-2 sm:w-auto">
         <Pill icon={<Calendar className="h-3.5 w-3.5" />}>
           <input
             type="date"
