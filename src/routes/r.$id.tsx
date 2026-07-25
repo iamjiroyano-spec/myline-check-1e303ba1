@@ -99,7 +99,11 @@ function SharedReceivingView() {
       </header>
 
       <main className="mx-auto max-w-3xl px-5 py-8">
+        <p className="mb-2 text-lg font-black uppercase tracking-wide text-foreground">
+          {data.brand}
+        </p>
         <div className="flex items-center gap-3">
+
           <div className="grid h-10 w-10 place-items-center rounded-xl bg-primary/15 text-primary">
             <PackageCheck className="h-5 w-5" />
           </div>
