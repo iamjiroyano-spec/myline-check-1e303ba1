@@ -821,7 +821,7 @@ function SectionPage() {
                           className="h-full rounded-full transition-all"
                           style={{
                             width: `${itemPct}%`,
-                            background: "var(--gradient-readiness)",
+                            background: `linear-gradient(90deg, hsl(${15 + itemPct * 0.35} 92% 45%), hsl(${20 + itemPct * 0.4} 96% 58%))`,
                           }}
                         />
                       </div>

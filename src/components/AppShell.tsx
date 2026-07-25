@@ -188,10 +188,10 @@ function Sidebar({ date, shift }: { date: string; shift: Slot }) {
                       <span className="ml-auto flex items-center gap-2" suppressHydrationWarning>
                         <span className="h-1 w-10 overflow-hidden rounded-full bg-muted">
                           <span
-                            className="block h-full"
+                            className="block h-full transition-all"
                             style={{
                               width: `${pct}%`,
-                              background: "var(--gradient-readiness)",
+                              background: `linear-gradient(90deg, hsl(${15 + pct * 0.35} 92% 45%), hsl(${20 + pct * 0.4} 96% 58%))`,
                             }}
                           />
                         </span>
