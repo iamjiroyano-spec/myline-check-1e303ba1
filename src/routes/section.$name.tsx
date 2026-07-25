@@ -464,6 +464,17 @@ function SectionPage() {
           : c,
       ),
     );
+  const moveItemToCategory = (ci: number, ii: number, toCi: number) =>
+    setDraft((d) => {
+      if (toCi === ci || toCi < 0 || toCi >= d.length) return d;
+      const item = d[ci]?.items[ii];
+      if (!item) return d;
+      return d.map((c, idx) => {
+        if (idx === ci) return { ...c, items: c.items.filter((_, j) => j !== ii) };
+        if (idx === toCi) return { ...c, items: [...c.items, item] };
+        return c;
+      });
+    });
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -773,6 +784,7 @@ function SectionPage() {
             updateItem={updateItem}
             removeItem={removeItem}
             addItem={addItem}
+            moveItemToCategory={moveItemToCategory}
             SHELF_OPTIONS={SHELF_OPTIONS}
             CONTAINER_OPTIONS={CONTAINER_OPTIONS}
           />
@@ -1255,6 +1267,7 @@ type EditDraftDndProps = {
   updateItem: (ci: number, ii: number, patch: Partial<EditItem>) => void;
   removeItem: (ci: number, ii: number) => void;
   addItem: (ci: number) => void;
+  moveItemToCategory: (ci: number, ii: number, toCi: number) => void;
   SHELF_OPTIONS: string[];
   CONTAINER_OPTIONS: string[];
 };
@@ -1299,6 +1312,7 @@ function SortableCategory({
   updateItem,
   removeItem,
   addItem,
+  moveItemToCategory,
   SHELF_OPTIONS,
   CONTAINER_OPTIONS,
 }: EditDraftDndProps & { ci: number; cat: EditCategory }) {
@@ -1388,6 +1402,8 @@ function SortableCategory({
                 it={it}
                 updateItem={updateItem}
                 removeItem={removeItem}
+                moveItemToCategory={moveItemToCategory}
+                categories={draft.map((c) => c.group)}
                 SHELF_OPTIONS={SHELF_OPTIONS}
                 CONTAINER_OPTIONS={CONTAINER_OPTIONS}
               />
@@ -1411,6 +1427,8 @@ function SortableItem({
   it,
   updateItem,
   removeItem,
+  moveItemToCategory,
+  categories,
   SHELF_OPTIONS,
   CONTAINER_OPTIONS,
 }: {
@@ -1419,6 +1437,8 @@ function SortableItem({
   it: EditItem;
   updateItem: (ci: number, ii: number, patch: Partial<EditItem>) => void;
   removeItem: (ci: number, ii: number) => void;
+  moveItemToCategory: (ci: number, ii: number, toCi: number) => void;
+  categories: string[];
   SHELF_OPTIONS: string[];
   CONTAINER_OPTIONS: string[];
 }) {
@@ -1448,6 +1468,26 @@ function SortableItem({
           placeholder="Item name"
           className="flex-1 rounded-lg border border-input bg-card px-3 py-1.5 text-sm outline-none focus:border-foreground/30"
         />
+        <select
+          value=""
+          onChange={(e) => {
+            const toCi = Number(e.target.value);
+            if (!Number.isNaN(toCi)) moveItemToCategory(ci, ii, toCi);
+            e.currentTarget.selectedIndex = 0;
+          }}
+          title="Move to category"
+          aria-label="Move to category"
+          className="max-w-[140px] rounded-lg border border-input bg-card px-2 py-1.5 text-xs outline-none focus:border-foreground/30"
+        >
+          <option value="">Move to…</option>
+          {categories.map((g, idx) =>
+            idx === ci ? null : (
+              <option key={idx} value={idx}>
+                {g || `Category ${idx + 1}`}
+              </option>
+            ),
+          )}
+        </select>
         <button
           onClick={() => removeItem(ci, ii)}
           className="grid h-7 w-7 place-items-center rounded-md text-muted-foreground hover:bg-danger-soft hover:text-danger"
