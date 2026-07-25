@@ -298,30 +298,47 @@ function StationsGrid({
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={ids} strategy={rectSortingStrategy}>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {ordered.map((s) => (
-              <SortableStationCard key={s.name} station={s} disabled={disabled} />
+            {ordered.map((s, i) => (
+              <SortableStationCard key={s.name} station={s} disabled={disabled} colorIndex={i} />
             ))}
           </div>
         </SortableContext>
+
       </DndContext>
     </section>
   );
 }
 
+const STATION_PALETTE = [
+  "oklch(0.65 0.18 250)",
+  "oklch(0.65 0.18 145)",
+  "oklch(0.70 0.18 55)",
+  "oklch(0.65 0.20 330)",
+  "oklch(0.65 0.15 195)",
+  "oklch(0.65 0.20 25)",
+  "oklch(0.65 0.18 285)",
+];
+
 function SortableStationCard({
   station: s,
   disabled,
+  colorIndex,
 }: {
   station: { name: string; done: number; total: number; pct: number };
   disabled: boolean;
+  colorIndex: number;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: s.name,
   });
+  const accent = STATION_PALETTE[colorIndex % STATION_PALETTE.length];
+  const bg = `color-mix(in oklch, ${accent} 12%, var(--card))`;
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.6 : 1,
+    background: bg,
+    borderLeft: `4px solid ${accent}`,
   };
   const Icon = SECTION_ICONS[s.name] ?? Utensils;
   const cardInner = (
@@ -337,7 +354,10 @@ function SortableStationCard({
         >
           <GripVertical className="h-4 w-4" />
         </button>
-        <span className="grid h-9 w-9 place-items-center rounded-xl bg-muted text-foreground">
+        <span
+          className="grid h-9 w-9 place-items-center rounded-xl text-foreground"
+          style={{ background: `color-mix(in oklch, ${accent} 25%, var(--card))` }}
+        >
           <Icon className="h-4 w-4" />
         </span>
         <div className="min-w-0 flex-1">
@@ -363,24 +383,25 @@ function SortableStationCard({
         style={style}
         aria-disabled
         title="Select a team member first"
-        className="group cursor-not-allowed rounded-2xl border border-dashed border-border bg-card p-4 opacity-60"
+        className="group cursor-not-allowed rounded-2xl border border-dashed border-border p-4 opacity-60"
       >
         {cardInner}
       </div>
     );
   }
   return (
-    <div ref={setNodeRef} style={style}>
+    <div ref={setNodeRef} style={style} className="rounded-2xl border border-border">
       <Link
         to="/section/$name"
         params={{ name: s.name }}
-        className="group block rounded-2xl border border-border bg-card p-4 transition-all hover:border-foreground/20 hover:shadow-sm"
+        className="group block rounded-2xl p-4 transition-all hover:shadow-sm"
       >
         {cardInner}
       </Link>
     </div>
   );
 }
+
 
 
 function StatCard({
