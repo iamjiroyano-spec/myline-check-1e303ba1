@@ -17,6 +17,8 @@ import {
   entryKey,
   readEntry,
   getShiftLabel,
+  getEffectiveSections,
+  effectiveCategorizedItems,
   type Entry,
   type SectionState,
   type Slot,
@@ -86,6 +88,19 @@ function loadSectionStruct(name: string, fallback: EditCategory[]): EditCategory
     if (raw) return JSON.parse(raw);
   } catch {}
   return fallback;
+}
+
+/** Load another station's category structure (saved edits, else defaults). */
+function loadStationStruct(stationName: string): EditCategory[] {
+  try {
+    const raw = lsStore.getItem(sectionStructKey(stationName));
+    if (raw) return JSON.parse(raw) as EditCategory[];
+  } catch {}
+  return effectiveCategorizedItems(stationName).map((c) => ({
+    group: c.group,
+    temp: /temp/i.test(c.group),
+    items: c.items.map((i) => ({ name: i.name, quality: "", shelf: "", container: "" })),
+  }));
 }
 
 export const Route = createFileRoute("/$name")({
@@ -371,6 +386,83 @@ function SectionPage() {
       }),
     );
   };
+
+  // Quick action: move an item to a category in ANOTHER station, carrying its
+  // saved status/note/photo for the current date along with it.
+  const quickMoveItemToStation = (
+    fromGroup: string,
+    itemIdx: number,
+    toStation: string,
+    toGroup: string,
+  ) => {
+    const fromCat = struct.find((c) => c.group === fromGroup);
+    const moved = fromCat?.items[itemIdx];
+    if (!fromCat || !moved) return;
+    const fromOcc = fromCat.items.slice(0, itemIdx).filter((i) => i.name === moved.name).length;
+
+    // Target station structure
+    const targetStruct = loadStationStruct(toStation);
+    const targetCat = targetStruct.find((c) => c.group === toGroup);
+    if (!targetCat) return;
+    const toOcc = targetCat.items.filter((i) => i.name === moved.name).length;
+
+    const entry = readEntry(state, fromGroup, moved.name, slot, fromOcc);
+
+    // Write item into the target station's structure
+    const nextTarget = targetStruct.map((c) =>
+      c.group === toGroup ? { ...c, items: [...c.items, moved] } : c,
+    );
+    try {
+      lsStore.setItem(sectionStructKey(toStation), JSON.stringify(nextTarget));
+    } catch {}
+
+    // Carry the entry over to the target station's saved state
+    if (entry?.status || entry?.note || entry?.photo) {
+      try {
+        const tState = loadSection(toStation, shell.date);
+        tState.entries[entryKey(toGroup, moved.name, toOcc)] = {
+          ...tState.entries[entryKey(toGroup, moved.name, toOcc)],
+          [slot]: entry,
+        } as Record<Slot, Entry>;
+        lsStore.setItem(storageKey(toStation, shell.date), JSON.stringify(tState));
+      } catch {}
+    }
+
+    // Remove from this station (and re-key later duplicates)
+    setState((prev) => {
+      const entries = { ...prev.entries };
+      delete entries[entryKey(fromGroup, moved.name, fromOcc)];
+      let shift = fromOcc;
+      fromCat.items.forEach((it, j) => {
+        if (j <= itemIdx || it.name !== moved.name) return;
+        const cur = entryKey(fromGroup, it.name, shift + 1);
+        const nxt = entryKey(fromGroup, it.name, shift);
+        if (entries[cur]) {
+          entries[nxt] = entries[cur];
+          delete entries[cur];
+        }
+        shift += 1;
+      });
+      return { ...prev, entries };
+    });
+
+    persistStruct(
+      struct.map((c) =>
+        c.group === fromGroup ? { ...c, items: c.items.filter((_, j) => j !== itemIdx) } : c,
+      ),
+    );
+  };
+
+  const otherStations = useMemo(
+    () =>
+      getEffectiveSections()
+        .filter((s) => s.name !== name)
+        .map((s) => ({ name: s.name, groups: loadStationStruct(s.name).map((c) => c.group) }))
+        .filter((s) => s.groups.length > 0),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [name, struct],
+  );
+
 
   useEffect(() => {
     setState(loadSection(name, shell.date));
@@ -1067,31 +1159,46 @@ function SectionPage() {
                         </button>
                       )}
 
-                      {struct.length > 1 && (
+                      {(struct.length > 1 || otherStations.length > 0) && (
                         <div className="relative shrink-0">
                           <select
                             value=""
                             onChange={(ev) => {
-                              const to = ev.target.value;
+                              const raw = ev.target.value;
                               ev.target.value = "";
-                              if (to) quickMoveItem(cat.group, idx, to);
+                              if (!raw) return;
+                              const [st, grp] = raw.split("\u241F");
+                              if (st === name) quickMoveItem(cat.group, idx, grp);
+                              else quickMoveItemToStation(cat.group, idx, st, grp);
                             }}
-                            title="Move to another category"
-                            aria-label={`Move ${item.name} to another category`}
+                            title="Move to another category or station"
+                            aria-label={`Move ${item.name} to another category or station`}
                             className="h-7 w-7 cursor-pointer appearance-none rounded-full border border-transparent bg-transparent text-transparent hover:bg-accent"
                           >
                             <option value="" className="bg-popover text-popover-foreground">Move to…</option>
-                            {struct
-                              .filter((c) => c.group !== cat.group)
-                              .map((c) => (
-                                <option key={c.group} value={c.group} className="bg-popover text-popover-foreground">
-                                  {c.group}
-                                </option>
-                              ))}
+                            <optgroup label={name} className="bg-popover text-popover-foreground">
+                              {struct
+                                .filter((c) => c.group !== cat.group)
+                                .map((c) => (
+                                  <option key={c.group} value={`${name}\u241F${c.group}`} className="bg-popover text-popover-foreground">
+                                    {c.group}
+                                  </option>
+                                ))}
+                            </optgroup>
+                            {otherStations.map((st) => (
+                              <optgroup key={st.name} label={st.name} className="bg-popover text-popover-foreground">
+                                {st.groups.map((g) => (
+                                  <option key={g} value={`${st.name}\u241F${g}`} className="bg-popover text-popover-foreground">
+                                    {g}
+                                  </option>
+                                ))}
+                              </optgroup>
+                            ))}
                           </select>
                           <FolderInput className="pointer-events-none absolute left-1/2 top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 text-muted-foreground" />
                         </div>
                       )}
+
                       </div>
 
                       </div>
