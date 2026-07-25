@@ -265,10 +265,10 @@ function NavItem({
 }) {
   const cls = `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
     active
-      ? "bg-foreground text-background"
+      ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
       : disabled
-        ? "text-muted-foreground/50 cursor-not-allowed"
-        : "text-foreground hover:bg-sidebar-accent"
+        ? "text-sidebar-foreground/40 cursor-not-allowed"
+        : "text-sidebar-foreground sidebar-hover"
   }`;
   if (disabled) {
     return (
