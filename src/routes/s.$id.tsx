@@ -100,7 +100,9 @@ function SharedView() {
       temps: { group: string; value: string }[];
       tempUnit: "F" | "C";
       comment: string;
+      commentPhotos: string[];
     }[] = [];
+
 
     for (const s of data.payload.sections) {
       const st = s.state;
