@@ -1043,12 +1043,16 @@ function SectionPage() {
                           />
                         </div>
                       )}
-                    </div>
+                      </>)}
+                    </SortableCheckRow>
                   );
                 })}
 
               </div>
+                </SortableContext>
+              </DndContext>
             </section>
+
           );})}
 
       {!editMode && (
