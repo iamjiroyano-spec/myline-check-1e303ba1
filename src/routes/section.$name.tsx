@@ -784,6 +784,7 @@ function SectionPage() {
             updateItem={updateItem}
             removeItem={removeItem}
             addItem={addItem}
+            moveItemToCategory={moveItemToCategory}
             SHELF_OPTIONS={SHELF_OPTIONS}
             CONTAINER_OPTIONS={CONTAINER_OPTIONS}
           />
