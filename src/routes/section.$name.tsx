@@ -809,7 +809,8 @@ function SectionPage() {
               "oklch(0.65 0.18 285)",
             ];
             const accent = palette[catIdx % palette.length];
-            const bg = `color-mix(in oklch, ${accent} 12%, var(--card))`;
+            const bg = `color-mix(in oklch, ${accent} 10%, var(--card))`;
+            const headingColor = `color-mix(in oklch, ${accent} 65%, var(--foreground))`;
             return (
             <section
               key={cat.group}
@@ -820,7 +821,7 @@ function SectionPage() {
               }}
             >
               <div className="mb-2 flex items-center justify-between px-1">
-                <h3 className="text-xs font-bold uppercase tracking-[0.18em]" style={{ color: accent }}>
+                <h3 className="text-sm font-bold uppercase tracking-[0.14em]" style={{ color: headingColor }}>
                   {cat.group}
                 </h3>
                 {cat.temp && (
