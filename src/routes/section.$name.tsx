@@ -989,6 +989,7 @@ function SectionPage() {
                         )}
                       </div>
 
+                      <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-3">
                       <div className="hidden h-1.5 w-28 overflow-hidden rounded-full bg-muted sm:block">
                         <div
                           className="h-full rounded-full transition-all"
@@ -999,7 +1000,7 @@ function SectionPage() {
                         />
                       </div>
 
-                      <div className="relative">
+                      <div className="relative shrink-0">
                         <select
                           value={status}
                           onChange={(ev) => setEntry(cat.group, item.name, occ, { status: ev.target.value })}
