@@ -67,14 +67,11 @@ function Dashboard() {
     let totalItems = 0;
     let checkedItems = 0;
     let stationsComplete = 0;
-    const perStation: { name: string; done: number; total: number; pct: number }[] = [];
     for (const s of getEffectiveSections()) {
       const { done, total } = sectionProgress(s.name, shell.shift, shell.date);
       totalItems += total;
       checkedItems += done;
-      const pct = total ? Math.round((done / total) * 100) : 0;
       if (total > 0 && done === total) stationsComplete++;
-      perStation.push({ name: s.name, done, total, pct });
     }
     const flagged: FlaggedRow[] = allFlagged(shell.shift, shell.date);
     const readiness = totalItems ? Math.round((checkedItems / totalItems) * 100) : 0;
@@ -82,7 +79,6 @@ function Dashboard() {
       totalItems,
       checkedItems,
       stationsComplete,
-      perStation,
       flagged,
       readiness,
     };
