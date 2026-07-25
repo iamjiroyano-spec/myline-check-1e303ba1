@@ -17,25 +17,44 @@ export const Route = createFileRoute("/receiving")({
 });
 
 const LS_KEY = "linecheck:receiving";
+const TEMPLATE_KEY = "linecheck:receiving-template";
 
-/* --- Checklist definitions (mirrors the paper form) --- */
-const TEMP_ITEMS = [
+/* --- Default checklist items (mirrors the paper form). Users can edit these. --- */
+const DEFAULT_TEMP_ITEMS = [
   "Cold items: 0°C to 5°C",
   "Frozen items -18°C or lower",
   "Hot items: 57°C or higher",
 ];
-const QUANTITY_ITEMS = [
+const DEFAULT_QUANTITY_ITEMS = [
   "All items delivered",
   "Quantities match order",
   "No missing, extra, or incorrect items",
 ];
-const QUALITY_ITEMS = [
+const DEFAULT_QUALITY_ITEMS = [
   "Packing clean and undamaged",
   "Delivery box is cleaned and has no bad odor",
   "No tempering or contamination",
   "Items in good condition",
   "Expiry date is valid",
 ];
+
+type Template = { temp: string[]; quantity: string[]; quality: string[] };
+
+function loadTemplate(): Template {
+  try {
+    const raw = lsStore.getItem(TEMPLATE_KEY);
+    if (raw) {
+      const t = JSON.parse(raw);
+      if (t && Array.isArray(t.temp) && Array.isArray(t.quantity) && Array.isArray(t.quality)) {
+        return t;
+      }
+    }
+  } catch { /* ignore */ }
+  return { temp: [...DEFAULT_TEMP_ITEMS], quantity: [...DEFAULT_QUANTITY_ITEMS], quality: [...DEFAULT_QUALITY_ITEMS] };
+}
+function saveTemplate(t: Template) {
+  lsStore.setItem(TEMPLATE_KEY, JSON.stringify(t));
+}
 
 type Checks = Record<string, boolean>;
 
