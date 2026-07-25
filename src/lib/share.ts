@@ -57,10 +57,12 @@ export const sharedShiftPayloadSchema = z.object({
         temps: z.record(z.string(), z.string()).catch({}),
         tempUnit: z.enum(["F", "C"]).catch("F"),
         comment: z.string().catch(""),
+        commentPhotos: z.array(z.string()).catch([]),
       }),
     )
     .catch([]),
 });
+
 
 export type SharedShiftPayload = z.infer<typeof sharedShiftPayloadSchema>;
 
