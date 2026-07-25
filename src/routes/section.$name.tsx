@@ -1194,10 +1194,12 @@ function AutoGrowTextarea({
   value,
   onChange,
   placeholder,
+  className,
 }: {
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
+  className?: string;
 }) {
   const ref = useRef<HTMLTextAreaElement | null>(null);
   useEffect(() => {
@@ -1213,10 +1215,14 @@ function AutoGrowTextarea({
       onChange={(ev) => onChange(ev.target.value)}
       placeholder={placeholder}
       rows={3}
-      className="w-full resize-none overflow-hidden rounded-2xl border border-border bg-card px-3 py-2.5 text-sm text-foreground outline-none transition focus:border-foreground/40"
+      className={
+        className ??
+        "w-full resize-none overflow-hidden rounded-2xl border border-border bg-card px-3 py-2.5 text-sm text-foreground outline-none transition focus:border-foreground/40"
+      }
     />
   );
 }
+
 
 // ---------- Drag-and-drop edit UI ----------
 
