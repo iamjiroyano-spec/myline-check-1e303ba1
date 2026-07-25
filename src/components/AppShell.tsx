@@ -162,7 +162,9 @@ function Sidebar({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loc.pathname]);
 
-  const sectionMatch = loc.pathname.match(/^\/section\/(.+?)\/?$/);
+  const RESERVED_PATHS = ["", "auth", "history", "receiving", "settings", "r", "s", "section"];
+  const firstSeg = loc.pathname.split("/")[1] ?? "";
+  const sectionMatch = RESERVED_PATHS.includes(firstSeg) ? null : ([null, firstSeg] as const);
   let activeSection: string | null = sectionMatch?.[1] ?? null;
   if (activeSection) {
     try {
