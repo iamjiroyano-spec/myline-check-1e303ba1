@@ -1312,6 +1312,7 @@ function SortableCategory({
   updateItem,
   removeItem,
   addItem,
+  moveItemToCategory,
   SHELF_OPTIONS,
   CONTAINER_OPTIONS,
 }: EditDraftDndProps & { ci: number; cat: EditCategory }) {
