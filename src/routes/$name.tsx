@@ -1,4 +1,5 @@
 import { lsStore } from "@/lib/lsStore";
+import { stationFromSlug } from "@/lib/slug";
 import { compressImageFile } from "@/lib/image";
 
 import { createFileRoute, useRouter } from "@tanstack/react-router";
@@ -97,8 +98,8 @@ export const Route = createFileRoute("/$name")({
       .parse(s),
   head: ({ params }) => ({
     meta: [
-      { title: `${params.name} — Line Check` },
-      { name: "description", content: `Line check for ${params.name} section.` },
+      { title: `${params.name.replace(/-/g, " ")} — Line Check` },
+      { name: "description", content: `Line check for ${params.name.replace(/-/g, " ")} section.` },
     ],
   }),
   component: SectionPage,
@@ -149,7 +150,8 @@ function buildDefaultStruct(section: { items: Array<{ name: string; group?: stri
 }
 
 function SectionPage() {
-  const { name } = Route.useParams();
+  const { name: rawName } = Route.useParams();
+  const name = useMemo(() => stationFromSlug(rawName), [rawName]);
   const search = Route.useSearch() as { date?: string; shift?: Slot };
   const section = useMemo(
     () => SECTIONS.find((s) => s.name === name) ?? { name, items: [] as { name: string }[] },

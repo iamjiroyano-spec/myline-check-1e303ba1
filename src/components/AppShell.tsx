@@ -1,4 +1,5 @@
 import { lsStore } from "@/lib/lsStore";
+import { stationSlug } from "@/lib/slug";
 import { Link, useLocation } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
@@ -220,12 +221,12 @@ function Sidebar({
             const Icon = SECTION_ICONS[s.name] ?? Utensils;
             const { done, total } = sectionProgress(s.name, shift, date);
             const pct = total ? Math.round((done / total) * 100) : 0;
-            const active = activeSection === s.name;
+            const active = activeSection === s.name || activeSection === stationSlug(s.name);
             return (
               <li key={s.name}>
                 <Link
                   to="/$name"
-                  params={{ name: s.name }}
+                  params={{ name: stationSlug(s.name) }}
                   className={`group flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium transition-colors ${
                     active
                       ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
