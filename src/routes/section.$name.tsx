@@ -809,10 +809,10 @@ function SectionPage() {
         struct
           .map((cat) => {
             const seen = new Map<string, number>();
-            const withOcc = cat.items.map((item) => {
+            const withOcc = cat.items.map((item, idx) => {
               const occ = seen.get(item.name) ?? 0;
               seen.set(item.name, occ + 1);
-              return { item, occ };
+              return { item, occ, idx };
             });
             const visible = withOcc.filter(({ item, occ }) => {
               if (!flaggedOnly) return true;
