@@ -65,15 +65,16 @@ async function pullFromServer() {
     }
     suppressPush = true;
     try {
-      // Clear existing scoped linecheck:* keys, then hydrate from remote.
-      for (const k of lsStore.keys()) {
-        if (k.startsWith(PREFIX)) lsStore.removeItem(k);
-      }
+      // Merge: overwrite with remote values, but preserve any local-only keys
+      // (e.g. writes that hadn't been pushed yet before a refresh).
+      const localKeys = new Set(lsStore.keys().filter((k) => k.startsWith(PREFIX)));
       for (const [k, v] of Object.entries(remote)) {
         if (typeof v === "string" && k.startsWith(PREFIX)) {
           lsStore.setItem(k, v);
+          localKeys.delete(k);
         }
       }
+      // localKeys now contains local-only keys — leave them intact.
     } finally {
       suppressPush = false;
     }
@@ -82,8 +83,18 @@ async function pullFromServer() {
       window.dispatchEvent(new Event("linecheck:staff-update"));
       window.dispatchEvent(new Event("linecheck:brand-update"));
     }
+    // If we had unpushed local-only keys, push the merged snapshot back up.
+    void pushNow();
   } catch (e) {
     console.warn("[sync] pull failed", e);
+  }
+}
+
+function flushPendingPush() {
+  if (pushTimer) {
+    clearTimeout(pushTimer);
+    pushTimer = null;
+    void pushNow();
   }
 }
 
@@ -96,11 +107,20 @@ export async function startSync(userId: string) {
   }
   if (typeof window !== "undefined" && !unsubWrite) {
     window.addEventListener("linecheck:local-write", onLocalWrite);
-    unsubWrite = () =>
+    window.addEventListener("pagehide", flushPendingPush);
+    window.addEventListener("beforeunload", flushPendingPush);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "hidden") flushPendingPush();
+    });
+    unsubWrite = () => {
       window.removeEventListener("linecheck:local-write", onLocalWrite);
+      window.removeEventListener("pagehide", flushPendingPush);
+      window.removeEventListener("beforeunload", flushPendingPush);
+    };
   }
   await pullFromServer();
 }
+
 
 export function stopSync() {
   currentUserId = null;
