@@ -72,6 +72,10 @@
 :root {
   --radius: 0.75rem;
 
+  /* Progress bar gradient: yellow → orange */
+  --gradient-readiness: linear-gradient(90deg, hsl(50 95% 55%), hsl(28 95% 55%));
+
+
   /* Warm cream canvas */
   --background: oklch(0.982 0.012 75);
   --foreground: oklch(0.22 0.028 45);
