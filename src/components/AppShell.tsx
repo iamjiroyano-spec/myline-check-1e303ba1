@@ -184,12 +184,20 @@ function Sidebar({
           <BrandMark collapsed={collapsed} />
         </Link>
         <button
+          onClick={onCloseMobile}
+          className="rounded-md p-1 text-muted-foreground hover:bg-sidebar-accent md:hidden"
+          aria-label="Close menu"
+        >
+          <X className="h-4 w-4" />
+        </button>
+        <button
           onClick={() => setCollapsed((c) => !c)}
-          className="rounded-md p-1 text-muted-foreground hover:bg-sidebar-accent"
+          className="hidden rounded-md p-1 text-muted-foreground hover:bg-sidebar-accent md:block"
           aria-label="Toggle sidebar"
         >
           <ChevronLeft className={`h-4 w-4 transition-transform ${collapsed ? "rotate-180" : ""}`} />
         </button>
+
       </div>
 
       <nav className="px-3">
