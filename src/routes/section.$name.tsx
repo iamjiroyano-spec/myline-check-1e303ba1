@@ -798,10 +798,28 @@ function SectionPage() {
             return [cat, visible] as const;
           })
           .filter(([, visible]) => visible.length > 0)
-          .map(([cat, items]) => (
-            <section key={cat.group} className="mt-6">
+          .map(([cat, items], catIdx) => {
+            const palette = [
+              { bg: "oklch(0.96 0.04 250)", darkBg: "oklch(0.28 0.05 250)", accent: "oklch(0.55 0.15 250)" },
+              { bg: "oklch(0.96 0.05 145)", darkBg: "oklch(0.28 0.05 145)", accent: "oklch(0.55 0.15 145)" },
+              { bg: "oklch(0.96 0.05 55)",  darkBg: "oklch(0.28 0.05 55)",  accent: "oklch(0.60 0.15 55)"  },
+              { bg: "oklch(0.96 0.05 330)", darkBg: "oklch(0.28 0.05 330)", accent: "oklch(0.60 0.15 330)" },
+              { bg: "oklch(0.96 0.05 195)", darkBg: "oklch(0.28 0.05 195)", accent: "oklch(0.55 0.15 195)" },
+              { bg: "oklch(0.96 0.05 25)",  darkBg: "oklch(0.28 0.05 25)",  accent: "oklch(0.60 0.15 25)"  },
+              { bg: "oklch(0.96 0.05 285)", darkBg: "oklch(0.28 0.05 285)", accent: "oklch(0.55 0.15 285)" },
+            ];
+            const color = palette[catIdx % palette.length];
+            return (
+            <section
+              key={cat.group}
+              className="mt-6 rounded-2xl border border-border p-3 category-block"
+              style={{
+                background: `light-dark(${color.bg}, ${color.darkBg})`,
+                borderLeft: `4px solid ${color.accent}`,
+              }}
+            >
               <div className="mb-2 flex items-center justify-between px-1">
-                <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                <h3 className="text-xs font-bold uppercase tracking-[0.18em]" style={{ color: color.accent }}>
                   {cat.group}
                 </h3>
                 {cat.temp && (
