@@ -20,7 +20,7 @@ import {
   type SectionState,
   type Slot,
 } from "@/lib/lineCheck";
-import { Camera, Check, ChevronDown, ChevronUp, Download, Edit3, Filter, GripVertical, Save, Thermometer, Plus, Trash2, Upload, X } from "lucide-react";
+import { Camera, Check, ChevronDown, FolderInput, ChevronUp, Download, Edit3, Filter, GripVertical, Save, Thermometer, Plus, Trash2, Upload, X } from "lucide-react";
 import { z } from "zod";
 import {
   DndContext,
@@ -325,6 +325,49 @@ function SectionPage() {
     setStruct(next);
     setDraft(next);
     window.dispatchEvent(new Event("linecheck:update"));
+  };
+
+  // Quick action: move an item from one category to another (view mode),
+  // carrying its saved statuses/notes/photos along with it.
+  const quickMoveItem = (fromGroup: string, itemIdx: number, toGroup: string) => {
+    if (fromGroup === toGroup) return;
+    const fromCat = struct.find((c) => c.group === fromGroup);
+    const toCat = struct.find((c) => c.group === toGroup);
+    const moved = fromCat?.items[itemIdx];
+    if (!fromCat || !toCat || !moved) return;
+    const fromOcc = fromCat.items.slice(0, itemIdx).filter((i) => i.name === moved.name).length;
+    const toOcc = toCat.items.filter((i) => i.name === moved.name).length;
+
+    setState((prev) => {
+      const entries = { ...prev.entries };
+      const oldKey = entryKey(fromGroup, moved.name, fromOcc);
+      const newKey = entryKey(toGroup, moved.name, toOcc);
+      if (entries[oldKey]) {
+        entries[newKey] = entries[oldKey];
+        delete entries[oldKey];
+      }
+      // Re-key later duplicates in the source category (their occurrence shifts down).
+      let shift = fromOcc;
+      fromCat.items.forEach((it, j) => {
+        if (j <= itemIdx || it.name !== moved.name) return;
+        const cur = entryKey(fromGroup, it.name, shift + 1);
+        const next = entryKey(fromGroup, it.name, shift);
+        if (entries[cur]) {
+          entries[next] = entries[cur];
+          delete entries[cur];
+        }
+        shift += 1;
+      });
+      return { ...prev, entries };
+    });
+
+    persistStruct(
+      struct.map((c) => {
+        if (c.group === fromGroup) return { ...c, items: c.items.filter((_, j) => j !== itemIdx) };
+        if (c.group === toGroup) return { ...c, items: [...c.items, moved] };
+        return c;
+      }),
+    );
   };
 
   useEffect(() => {
@@ -896,7 +939,7 @@ function SectionPage() {
                   strategy={verticalListSortingStrategy}
                 >
               <div className="space-y-2">
-                {items.map(({ item, occ }) => {
+                {items.map(({ item, occ, idx }) => {
                   const e = readEntry(state, cat.group, item.name, slot, occ);
                   const status = e?.status ?? "";
                   const checked = !!status && OK_STATUSES.has(status);
@@ -1020,6 +1063,33 @@ function SectionPage() {
                           <img src={e.photo} alt="" className="h-full w-full object-cover" />
                         </button>
                       )}
+
+                      {struct.length > 1 && (
+                        <div className="relative shrink-0">
+                          <select
+                            value=""
+                            onChange={(ev) => {
+                              const to = ev.target.value;
+                              ev.target.value = "";
+                              if (to) quickMoveItem(cat.group, idx, to);
+                            }}
+                            title="Move to another category"
+                            aria-label={`Move ${item.name} to another category`}
+                            className="h-7 w-7 cursor-pointer appearance-none rounded-full border border-transparent bg-transparent text-transparent hover:bg-accent"
+                          >
+                            <option value="">Move to…</option>
+                            {struct
+                              .filter((c) => c.group !== cat.group)
+                              .map((c) => (
+                                <option key={c.group} value={c.group}>
+                                  {c.group}
+                                </option>
+                              ))}
+                          </select>
+                          <FolderInput className="pointer-events-none absolute left-1/2 top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 text-muted-foreground" />
+                        </div>
+                      )}
+
                       </div>
                       {flagged && (
                         <div className="border-t border-border/60 px-3 py-2.5">
