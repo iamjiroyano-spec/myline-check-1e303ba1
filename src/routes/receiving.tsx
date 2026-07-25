@@ -4,7 +4,7 @@ import { AppShell, useShellState } from "@/components/AppShell";
 import { lsStore } from "@/lib/lsStore";
 import { compressImageFile } from "@/lib/image";
 import { STAFF } from "@/lib/lineCheck";
-import { Camera, Trash2, X, PackageCheck, Plus, ChevronDown, ChevronUp } from "lucide-react";
+import { Camera, Trash2, X, PackageCheck, Plus, ChevronDown, ChevronUp, Pencil, Check as CheckIcon } from "lucide-react";
 
 export const Route = createFileRoute("/receiving")({
   head: () => ({
@@ -17,25 +17,44 @@ export const Route = createFileRoute("/receiving")({
 });
 
 const LS_KEY = "linecheck:receiving";
+const TEMPLATE_KEY = "linecheck:receiving-template";
 
-/* --- Checklist definitions (mirrors the paper form) --- */
-const TEMP_ITEMS = [
+/* --- Default checklist items (mirrors the paper form). Users can edit these. --- */
+const DEFAULT_TEMP_ITEMS = [
   "Cold items: 0°C to 5°C",
   "Frozen items -18°C or lower",
   "Hot items: 57°C or higher",
 ];
-const QUANTITY_ITEMS = [
+const DEFAULT_QUANTITY_ITEMS = [
   "All items delivered",
   "Quantities match order",
   "No missing, extra, or incorrect items",
 ];
-const QUALITY_ITEMS = [
+const DEFAULT_QUALITY_ITEMS = [
   "Packing clean and undamaged",
   "Delivery box is cleaned and has no bad odor",
   "No tempering or contamination",
   "Items in good condition",
   "Expiry date is valid",
 ];
+
+type Template = { temp: string[]; quantity: string[]; quality: string[] };
+
+function loadTemplate(): Template {
+  try {
+    const raw = lsStore.getItem(TEMPLATE_KEY);
+    if (raw) {
+      const t = JSON.parse(raw);
+      if (t && Array.isArray(t.temp) && Array.isArray(t.quantity) && Array.isArray(t.quality)) {
+        return t;
+      }
+    }
+  } catch { /* ignore */ }
+  return { temp: [...DEFAULT_TEMP_ITEMS], quantity: [...DEFAULT_QUANTITY_ITEMS], quality: [...DEFAULT_QUALITY_ITEMS] };
+}
+function saveTemplate(t: Template) {
+  lsStore.setItem(TEMPLATE_KEY, JSON.stringify(t));
+}
 
 type Checks = Record<string, boolean>;
 
@@ -88,8 +107,10 @@ function emptyChecks(items: string[]): Checks {
 function ReceivingPage() {
   const shell = useShellState("Store Receiving Item Checklist");
   const [records, setRecords] = useState<ReceivingRecord[]>(() => loadRecords());
+  const [template, setTemplate] = useState<Template>(() => loadTemplate());
   const [form, setForm] = useState(() => {
     const { date, time } = nowParts();
+    const t = loadTemplate();
     return {
       date,
       time,
@@ -99,9 +120,9 @@ function ReceivingPage() {
       purchaseOrder: "",
       chillerCarTemp: "",
       productTemp: "",
-      tempChecks: emptyChecks(TEMP_ITEMS),
-      quantityChecks: emptyChecks(QUANTITY_ITEMS),
-      qualityChecks: emptyChecks(QUALITY_ITEMS),
+      tempChecks: emptyChecks(t.temp),
+      quantityChecks: emptyChecks(t.quantity),
+      qualityChecks: emptyChecks(t.quality),
       receiverName: "",
       signature: "",
       comments: "",
@@ -113,7 +134,7 @@ function ReceivingPage() {
   const [viewer, setViewer] = useState<string | null>(null);
 
   useEffect(() => {
-    const refresh = () => setRecords(loadRecords());
+    const refresh = () => { setRecords(loadRecords()); setTemplate(loadTemplate()); };
     window.addEventListener("linecheck:update", refresh);
     window.addEventListener("linecheck:scope-change", refresh);
     return () => {
@@ -121,6 +142,41 @@ function ReceivingPage() {
       window.removeEventListener("linecheck:scope-change", refresh);
     };
   }, []);
+
+  /* Template mutations (persist + keep current form's checks in sync) */
+  function updateTemplateGroup(
+    group: keyof Template,
+    updater: (arr: string[]) => string[],
+  ) {
+    setTemplate((prev) => {
+      const nextArr = updater(prev[group]);
+      const next = { ...prev, [group]: nextArr };
+      saveTemplate(next);
+      // Keep form checks aligned with the new item list
+      const checksKey = ({ temp: "tempChecks", quantity: "quantityChecks", quality: "qualityChecks" } as const)[group];
+      setForm((f) => {
+        const oldChecks = f[checksKey] as Checks;
+        const rebuilt: Checks = {};
+        nextArr.forEach((it) => { rebuilt[it] = !!oldChecks[it]; });
+        return { ...f, [checksKey]: rebuilt };
+      });
+      return next;
+    });
+  }
+  const addTemplateItem = (group: keyof Template, name: string) => {
+    const clean = name.trim();
+    if (!clean) return;
+    updateTemplateGroup(group, (arr) => (arr.includes(clean) ? arr : [...arr, clean]));
+  };
+  const renameTemplateItem = (group: keyof Template, oldName: string, newName: string) => {
+    const clean = newName.trim();
+    if (!clean || clean === oldName) return;
+    updateTemplateGroup(group, (arr) => arr.map((x) => (x === oldName ? clean : x)));
+  };
+  const removeTemplateItem = (group: keyof Template, name: string) => {
+    updateTemplateGroup(group, (arr) => arr.filter((x) => x !== name));
+  };
+
 
   const sorted = useMemo(
     () => [...records].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1)),
@@ -154,9 +210,9 @@ function ReceivingPage() {
       purchaseOrder: "",
       chillerCarTemp: "",
       productTemp: "",
-      tempChecks: emptyChecks(TEMP_ITEMS),
-      quantityChecks: emptyChecks(QUANTITY_ITEMS),
-      qualityChecks: emptyChecks(QUALITY_ITEMS),
+      tempChecks: emptyChecks(template.temp),
+      quantityChecks: emptyChecks(template.quantity),
+      qualityChecks: emptyChecks(template.quality),
       receiverName: "",
       signature: "",
       comments: "",
@@ -259,7 +315,15 @@ function ReceivingPage() {
           </div>
 
           {/* 1. Temperature Check */}
-          <ChecklistBlock title="1. Temperature Check">
+          <EditableChecklistBlock
+            title="1. Temperature Check"
+            items={template.temp}
+            checks={form.tempChecks}
+            onToggle={(k) => toggle("tempChecks", k)}
+            onAdd={(name) => addTemplateItem("temp", name)}
+            onRename={(oldN, newN) => renameTemplateItem("temp", oldN, newN)}
+            onRemove={(name) => removeTemplateItem("temp", name)}
+          >
             <div className="grid gap-3 sm:grid-cols-2">
               <Field label="Chiller Car Temp (°C)  · target 2°C to 5°C">
                 <input type="text" value={form.chillerCarTemp}
@@ -272,21 +336,30 @@ function ReceivingPage() {
                   placeholder="e.g. 4" className={inputCls} />
               </Field>
             </div>
-            <CheckList items={TEMP_ITEMS} checks={form.tempChecks}
-              onToggle={(k) => toggle("tempChecks", k)} />
-          </ChecklistBlock>
+          </EditableChecklistBlock>
 
           {/* 2. Quantity Check */}
-          <ChecklistBlock title="2. Quantity Check">
-            <CheckList items={QUANTITY_ITEMS} checks={form.quantityChecks}
-              onToggle={(k) => toggle("quantityChecks", k)} />
-          </ChecklistBlock>
+          <EditableChecklistBlock
+            title="2. Quantity Check"
+            items={template.quantity}
+            checks={form.quantityChecks}
+            onToggle={(k) => toggle("quantityChecks", k)}
+            onAdd={(name) => addTemplateItem("quantity", name)}
+            onRename={(oldN, newN) => renameTemplateItem("quantity", oldN, newN)}
+            onRemove={(name) => removeTemplateItem("quantity", name)}
+          />
 
           {/* 3. Quality Check */}
-          <ChecklistBlock title="3. Quality Check">
-            <CheckList items={QUALITY_ITEMS} checks={form.qualityChecks}
-              onToggle={(k) => toggle("qualityChecks", k)} />
-          </ChecklistBlock>
+          <EditableChecklistBlock
+            title="3. Quality Check"
+            items={template.quality}
+            checks={form.qualityChecks}
+            onToggle={(k) => toggle("qualityChecks", k)}
+            onAdd={(name) => addTemplateItem("quality", name)}
+            onRename={(oldN, newN) => renameTemplateItem("quality", oldN, newN)}
+            onRemove={(name) => removeTemplateItem("quality", name)}
+          />
+
 
           {/* Receiver / Signature / Comments */}
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -412,9 +485,9 @@ function ReceivingPage() {
                           <Info label="Signature" value={r.signature} />
                         </dl>
 
-                        <ChecklistView title="1. Temperature Check" items={TEMP_ITEMS} checks={r.tempChecks} />
-                        <ChecklistView title="2. Quantity Check" items={QUANTITY_ITEMS} checks={r.quantityChecks} />
-                        <ChecklistView title="3. Quality Check" items={QUALITY_ITEMS} checks={r.qualityChecks} />
+                        <ChecklistView title="1. Temperature Check" items={Object.keys(r.tempChecks || {})} checks={r.tempChecks} />
+                        <ChecklistView title="2. Quantity Check" items={Object.keys(r.quantityChecks || {})} checks={r.quantityChecks} />
+                        <ChecklistView title="3. Quality Check" items={Object.keys(r.qualityChecks || {})} checks={r.qualityChecks} />
 
                         {r.comments && (
                           <div>
@@ -535,6 +608,112 @@ function ChecklistView({
           </li>
         ))}
       </ul>
+    </div>
+  );
+}
+
+function EditableChecklistBlock({
+  title, items, checks, onToggle, onAdd, onRename, onRemove, children,
+}: {
+  title: string;
+  items: string[];
+  checks: Checks;
+  onToggle: (key: string) => void;
+  onAdd: (name: string) => void;
+  onRename: (oldName: string, newName: string) => void;
+  onRemove: (name: string) => void;
+  children?: React.ReactNode;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [newItem, setNewItem] = useState("");
+  const [editKey, setEditKey] = useState<string | null>(null);
+  const [editVal, setEditVal] = useState("");
+
+  function startEdit(name: string) {
+    setEditKey(name);
+    setEditVal(name);
+  }
+  function commitEdit() {
+    if (editKey != null) onRename(editKey, editVal);
+    setEditKey(null);
+    setEditVal("");
+  }
+
+  return (
+    <div className="mt-4 rounded-xl border border-border bg-background/40 p-3">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+        <button
+          type="button"
+          onClick={() => setEditing((v) => !v)}
+          className="inline-flex items-center gap-1 rounded-md border border-input bg-background px-2 py-1 text-xs font-medium hover:bg-accent"
+        >
+          {editing ? <><CheckIcon className="h-3 w-3" /> Done</> : <><Pencil className="h-3 w-3" /> Edit</>}
+        </button>
+      </div>
+      {children}
+      <ul className="mt-2 space-y-1.5">
+        {items.map((it) => (
+          <li key={it} className="flex items-center gap-2">
+            {editing ? (
+              editKey === it ? (
+                <>
+                  <input
+                    autoFocus
+                    value={editVal}
+                    onChange={(e) => setEditVal(e.target.value)}
+                    onBlur={commitEdit}
+                    onKeyDown={(e) => { if (e.key === "Enter") commitEdit(); if (e.key === "Escape") { setEditKey(null); setEditVal(""); } }}
+                    className="flex-1 rounded-md border border-input bg-background px-2 py-1 text-sm outline-none focus:border-foreground/40"
+                  />
+                  <button type="button" onClick={commitEdit} className="rounded-md p-1 text-primary hover:bg-accent" aria-label="Save">
+                    <CheckIcon className="h-4 w-4" />
+                  </button>
+                </>
+              ) : (
+                <>
+                  <span className="flex-1 text-sm text-foreground">{it}</span>
+                  <button type="button" onClick={() => startEdit(it)} className="rounded-md p-1 text-muted-foreground hover:bg-accent" aria-label="Rename">
+                    <Pencil className="h-3.5 w-3.5" />
+                  </button>
+                  <button type="button" onClick={() => onRemove(it)} className="rounded-md p-1 text-destructive hover:bg-destructive/10" aria-label="Remove">
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </>
+              )
+            ) : (
+              <label className="flex cursor-pointer items-center gap-2 text-sm text-foreground">
+                <input
+                  type="checkbox"
+                  checked={!!checks[it]}
+                  onChange={() => onToggle(it)}
+                  className="h-4 w-4 rounded border-input accent-primary"
+                />
+                <span>{it}</span>
+              </label>
+            )}
+          </li>
+        ))}
+      </ul>
+      {editing && (
+        <div className="mt-3 flex items-center gap-2">
+          <input
+            type="text"
+            value={newItem}
+            onChange={(e) => setNewItem(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") { onAdd(newItem); setNewItem(""); } }}
+            placeholder="New checklist item…"
+            className="flex-1 rounded-md border border-input bg-background px-2 py-1 text-sm outline-none focus:border-foreground/40"
+          />
+          <button
+            type="button"
+            onClick={() => { onAdd(newItem); setNewItem(""); }}
+            className="inline-flex items-center gap-1 rounded-md bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground hover:opacity-90"
+          >
+            <Plus className="h-3 w-3" /> Add
+          </button>
+        </div>
+      )}
     </div>
   );
 }
