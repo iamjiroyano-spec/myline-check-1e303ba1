@@ -464,6 +464,17 @@ function SectionPage() {
           : c,
       ),
     );
+  const moveItem = (ci: number, ii: number, toCi: number) =>
+    setDraft((d) => {
+      if (toCi === ci || toCi < 0 || toCi >= d.length) return d;
+      const item = d[ci]?.items[ii];
+      if (!item) return d;
+      return d.map((c, idx) => {
+        if (idx === ci) return { ...c, items: c.items.filter((_, j) => j !== ii) };
+        if (idx === toCi) return { ...c, items: [...c.items, item] };
+        return c;
+      });
+    });
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
