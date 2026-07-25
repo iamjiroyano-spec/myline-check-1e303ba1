@@ -315,7 +315,15 @@ function ReceivingPage() {
           </div>
 
           {/* 1. Temperature Check */}
-          <ChecklistBlock title="1. Temperature Check">
+          <EditableChecklistBlock
+            title="1. Temperature Check"
+            items={template.temp}
+            checks={form.tempChecks}
+            onToggle={(k) => toggle("tempChecks", k)}
+            onAdd={(name) => addTemplateItem("temp", name)}
+            onRename={(oldN, newN) => renameTemplateItem("temp", oldN, newN)}
+            onRemove={(name) => removeTemplateItem("temp", name)}
+          >
             <div className="grid gap-3 sm:grid-cols-2">
               <Field label="Chiller Car Temp (°C)  · target 2°C to 5°C">
                 <input type="text" value={form.chillerCarTemp}
@@ -328,21 +336,30 @@ function ReceivingPage() {
                   placeholder="e.g. 4" className={inputCls} />
               </Field>
             </div>
-            <CheckList items={TEMP_ITEMS} checks={form.tempChecks}
-              onToggle={(k) => toggle("tempChecks", k)} />
-          </ChecklistBlock>
+          </EditableChecklistBlock>
 
           {/* 2. Quantity Check */}
-          <ChecklistBlock title="2. Quantity Check">
-            <CheckList items={QUANTITY_ITEMS} checks={form.quantityChecks}
-              onToggle={(k) => toggle("quantityChecks", k)} />
-          </ChecklistBlock>
+          <EditableChecklistBlock
+            title="2. Quantity Check"
+            items={template.quantity}
+            checks={form.quantityChecks}
+            onToggle={(k) => toggle("quantityChecks", k)}
+            onAdd={(name) => addTemplateItem("quantity", name)}
+            onRename={(oldN, newN) => renameTemplateItem("quantity", oldN, newN)}
+            onRemove={(name) => removeTemplateItem("quantity", name)}
+          />
 
           {/* 3. Quality Check */}
-          <ChecklistBlock title="3. Quality Check">
-            <CheckList items={QUALITY_ITEMS} checks={form.qualityChecks}
-              onToggle={(k) => toggle("qualityChecks", k)} />
-          </ChecklistBlock>
+          <EditableChecklistBlock
+            title="3. Quality Check"
+            items={template.quality}
+            checks={form.qualityChecks}
+            onToggle={(k) => toggle("qualityChecks", k)}
+            onAdd={(name) => addTemplateItem("quality", name)}
+            onRename={(oldN, newN) => renameTemplateItem("quality", oldN, newN)}
+            onRemove={(name) => removeTemplateItem("quality", name)}
+          />
+
 
           {/* Receiver / Signature / Comments */}
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
