@@ -874,6 +874,26 @@ function SectionPage() {
                 )}
               </div>
 
+              <DndContext
+                sensors={viewSensors}
+                collisionDetection={closestCenter}
+                onDragEnd={(ev: DragEndEvent) => {
+                  const { active, over } = ev;
+                  if (!over || active.id === over.id) return;
+                  const from = items.find((v) => `${v.item.name}#${v.occ}` === active.id)?.idx;
+                  const to = items.find((v) => `${v.item.name}#${v.occ}` === over.id)?.idx;
+                  if (from == null || to == null) return;
+                  persistStruct(
+                    struct.map((c) =>
+                      c.group === cat.group ? { ...c, items: arrayMove(c.items, from, to) } : c,
+                    ),
+                  );
+                }}
+              >
+                <SortableContext
+                  items={items.map(({ item, occ }) => `${item.name}#${occ}`)}
+                  strategy={verticalListSortingStrategy}
+                >
               <div className="space-y-2">
                 {items.map(({ item, occ }) => {
                   const e = readEntry(state, cat.group, item.name, slot, occ);
@@ -884,13 +904,17 @@ function SectionPage() {
 
                   const noteMissing = flagged && !e?.note?.trim();
                   return (
-                    <div
+                    <SortableCheckRow
                       key={`${item.name}#${occ}`}
+                      id={`${item.name}#${occ}`}
                       className={`rounded-2xl border bg-card transition ${
                         noteMissing ? "border-rose-400 ring-1 ring-rose-200" : flagged ? "border-rose-200" : "border-border"
                       }`}
                     >
+                      {(handle) => (<>
                       <div className="flex items-center gap-3 px-3 py-2.5">
+                      {handle}
+
                       <button
                         onClick={() => toggleCheck(cat.group, item.name, occ)}
                         aria-label={checked ? "Uncheck item" : "Mark item OK"}
