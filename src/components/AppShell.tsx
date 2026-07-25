@@ -222,7 +222,7 @@ function Sidebar({
             return (
               <li key={s.name}>
                 <Link
-                  to="/section/$name"
+                  to="/$name"
                   params={{ name: s.name }}
                   className={`group flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium transition-colors ${
                     active

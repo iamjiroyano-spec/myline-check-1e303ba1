@@ -555,7 +555,7 @@ function StationRow({
             </ul>
           )}
           <Link
-            to="/section/$name"
+            to="/$name"
             params={{ name: station.name }}
             search={{ date, shift: slot }}
             className="mt-3 inline-flex items-center gap-1 rounded-full border border-border bg-card px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-foreground hover:bg-accent"

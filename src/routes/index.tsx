@@ -204,7 +204,7 @@ function Dashboard() {
               <li key={`${row.section}-${row.item}`}>
                 {shell.member ? (
                   <Link
-                    to="/section/$name"
+                    to="/$name"
                     params={{ name: row.section }}
                     className="flex items-center gap-3 px-6 py-3.5 hover:bg-accent"
                   >
