@@ -170,8 +170,15 @@ function SectionPage() {
     () => `linecheck:section-comment:${name}:${shell.date}:${shell.shift}`,
     [name, shell.date, shell.shift],
   );
+  const commentPhotosKey = useMemo(
+    () => `linecheck:section-comment-photos:${name}:${shell.date}:${shell.shift}`,
+    [name, shell.date, shell.shift],
+  );
   const [state, setState] = useState<SectionState>(() => loadSection(name, shell.date));
   const [comment, setComment] = useState<string>("");
+  const [commentPhotos, setCommentPhotos] = useState<string[]>([]);
+  const [commentViewer, setCommentViewer] = useState<{ index: number; photo: string } | null>(null);
+
   const [editMode, setEditMode] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
   const [flaggedOnly, setFlaggedOnly] = useState(false);
@@ -237,6 +244,16 @@ function SectionPage() {
     }
   }, [commentKey]);
 
+  useEffect(() => {
+    try {
+      const raw = lsStore.getItem(commentPhotosKey);
+      const parsed = raw ? JSON.parse(raw) : [];
+      setCommentPhotos(Array.isArray(parsed) ? parsed.filter((x) => typeof x === "string") : []);
+    } catch {
+      setCommentPhotos([]);
+    }
+  }, [commentPhotosKey]);
+
   const onCommentChange = (value: string) => {
     setComment(value);
     try {
@@ -245,6 +262,30 @@ function SectionPage() {
       window.dispatchEvent(new Event("linecheck:update"));
     } catch {}
   };
+
+  const persistCommentPhotos = (next: string[]) => {
+    setCommentPhotos(next);
+    try {
+      if (next.length) lsStore.setItem(commentPhotosKey, JSON.stringify(next));
+      else lsStore.removeItem(commentPhotosKey);
+      window.dispatchEvent(new Event("linecheck:update"));
+    } catch {}
+  };
+
+  const addCommentPhoto = (file: File) => {
+    const MAX = 8 * 1024 * 1024;
+    if (file.size > MAX) {
+      alert("Image too large (max 8MB).");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = typeof reader.result === "string" ? reader.result : "";
+      if (dataUrl) persistCommentPhotos([...commentPhotos, dataUrl]);
+    };
+    reader.readAsDataURL(file);
+  };
+
 
   const setTemp = (group: string, value: string) => {
     setTemps((prev) => {
@@ -931,17 +972,119 @@ function SectionPage() {
             <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
               Station Comment / Feedback
             </h3>
-            <span className="text-[10px] text-muted-foreground">
-              Auto-saved · {slot.toUpperCase()}
-            </span>
+            <div className="flex items-center gap-2">
+              <label
+                className="inline-flex h-7 cursor-pointer items-center gap-1 rounded-md border border-border bg-background px-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground hover:bg-accent hover:text-foreground"
+                title="Attach reference image"
+                aria-label="Attach reference image to station comment"
+              >
+                <Camera className="h-3.5 w-3.5" />
+                <span>Add Photo</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  onChange={(ev) => {
+                    const file = ev.target.files?.[0];
+                    ev.target.value = "";
+                    if (file) addCommentPhoto(file);
+                  }}
+                />
+              </label>
+              <span className="text-[10px] text-muted-foreground">
+                Auto-saved · {slot.toUpperCase()}
+              </span>
+            </div>
           </div>
           <AutoGrowTextarea
             value={comment}
             onChange={onCommentChange}
             placeholder={`Add a comment or feedback for ${name}…`}
           />
+          {commentPhotos.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-2 px-1">
+              {commentPhotos.map((photo, idx) => (
+                <div key={idx} className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setCommentViewer({ index: idx, photo })}
+                    className="grid h-16 w-16 place-items-center overflow-hidden rounded-md border border-border"
+                    title="View reference photo"
+                    aria-label={`View reference photo ${idx + 1}`}
+                  >
+                    <img src={photo} alt="" className="h-full w-full object-cover" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (confirm("Remove this reference photo?")) {
+                        persistCommentPhotos(commentPhotos.filter((_, i) => i !== idx));
+                      }
+                    }}
+                    className="absolute -right-1.5 -top-1.5 grid h-5 w-5 place-items-center rounded-full border border-border bg-background text-muted-foreground shadow hover:text-foreground"
+                    aria-label={`Remove reference photo ${idx + 1}`}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </section>
       )}
+      {commentViewer && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+          onClick={() => setCommentViewer(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Station reference photo"
+        >
+          <div
+            className="relative flex max-h-full w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xl"
+            onClick={(ev) => ev.stopPropagation()}
+          >
+            <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-2.5">
+              <div className="min-w-0">
+                <div className="truncate text-sm font-semibold">{name} — Reference</div>
+                <div className="truncate text-[11px] text-muted-foreground">
+                  Photo {commentViewer.index + 1} of {commentPhotos.length}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCommentViewer(null)}
+                className="grid h-8 w-8 place-items-center rounded-full text-muted-foreground hover:bg-accent hover:text-foreground"
+                aria-label="Close photo viewer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-auto bg-black/40 p-2">
+              <img src={commentViewer.photo} alt="" className="mx-auto max-h-[70vh] w-auto object-contain" />
+            </div>
+            <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border px-4 py-3">
+              <button
+                type="button"
+                onClick={() => {
+                  if (!commentViewer) return;
+                  if (confirm("Remove this reference photo?")) {
+                    const next = commentPhotos.filter((_, i) => i !== commentViewer.index);
+                    persistCommentPhotos(next);
+                    setCommentViewer(null);
+                  }
+                }}
+                className="inline-flex items-center gap-1.5 rounded-md border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-100"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                Remove
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {viewer && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
