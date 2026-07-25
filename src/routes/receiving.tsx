@@ -4,8 +4,7 @@ import { AppShell, useShellState } from "@/components/AppShell";
 import { lsStore } from "@/lib/lsStore";
 import { compressImageFile } from "@/lib/image";
 import { STAFF } from "@/lib/lineCheck";
-import { Camera, Trash2, X, PackageCheck, Plus, ChevronDown, ChevronUp, Pencil, Check as CheckIcon, Share2 } from "lucide-react";
-import { publishSharedReceiving } from "@/lib/receivingShare";
+import { Camera, Trash2, X, PackageCheck, Plus, ChevronDown, ChevronUp, Pencil, Check as CheckIcon } from "lucide-react";
 
 export const Route = createFileRoute("/receiving")({
   head: () => ({
@@ -133,43 +132,6 @@ function ReceivingPage() {
   });
   const [expanded, setExpanded] = useState<string | null>(null);
   const [viewer, setViewer] = useState<string | null>(null);
-  const [sharing, setSharing] = useState<string | null>(null);
-
-  async function shareRecord(r: ReceivingRecord) {
-    try {
-      setSharing(r.id);
-      const url = await publishSharedReceiving({
-        id: r.id,
-        createdAt: r.createdAt,
-        date: r.date,
-        time: r.time,
-        branch: r.branch,
-        driver: r.driver,
-        deliveryNote: r.deliveryNote,
-        purchaseOrder: r.purchaseOrder,
-        chillerCarTemp: r.chillerCarTemp,
-        productTemp: r.productTemp,
-        tempChecks: r.tempChecks,
-        quantityChecks: r.quantityChecks,
-        qualityChecks: r.qualityChecks,
-        receiverName: r.receiverName,
-        signature: r.signature,
-        comments: r.comments,
-        checkedBy: r.checkedBy,
-        photos: r.photos,
-      });
-      try {
-        await navigator.clipboard.writeText(url);
-        alert(`Share link copied:\n${url}`);
-      } catch {
-        prompt("Copy this share link:", url);
-      }
-    } catch (e: any) {
-      alert(`Couldn't create share link: ${e?.message ?? e}`);
-    } finally {
-      setSharing(null);
-    }
-  }
 
   useEffect(() => {
     const refresh = () => { setRecords(loadRecords()); setTemplate(loadTemplate()); };
@@ -545,12 +507,7 @@ function ReceivingPage() {
                           </div>
                         )}
 
-                        <div className="flex justify-end gap-2">
-                          <button onClick={() => shareRecord(r)} disabled={sharing === r.id}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent disabled:opacity-60">
-                            <Share2 className="h-3.5 w-3.5" />
-                            {sharing === r.id ? "Creating link…" : "Copy share link"}
-                          </button>
+                        <div className="flex justify-end">
                           <button onClick={() => deleteRecord(r.id)}
                             className="inline-flex items-center gap-1.5 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/10">
                             <Trash2 className="h-3.5 w-3.5" />
