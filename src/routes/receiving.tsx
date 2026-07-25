@@ -57,6 +57,7 @@ function nowParts() {
 }
 
 function ReceivingPage() {
+  const shell = useShellState("Receiving Checklist");
   const [records, setRecords] = useState<ReceivingRecord[]>(() => loadRecords());
   const [form, setForm] = useState(() => {
     const { date, time } = nowParts();
