@@ -153,7 +153,7 @@ function ReceivingPage() {
   const staff = STAFF;
 
   return (
-    <AppShell>
+    <AppShell {...shell}>
       <div className="mx-auto w-full max-w-4xl px-4 py-6">
         <header className="mb-6 flex items-center gap-3">
           <div className="grid h-10 w-10 place-items-center rounded-xl bg-primary/15 text-primary">
