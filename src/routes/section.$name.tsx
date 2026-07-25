@@ -1427,6 +1427,8 @@ function SortableItem({
   it,
   updateItem,
   removeItem,
+  moveItemToCategory,
+  categories,
   SHELF_OPTIONS,
   CONTAINER_OPTIONS,
 }: {
@@ -1435,6 +1437,8 @@ function SortableItem({
   it: EditItem;
   updateItem: (ci: number, ii: number, patch: Partial<EditItem>) => void;
   removeItem: (ci: number, ii: number) => void;
+  moveItemToCategory: (ci: number, ii: number, toCi: number) => void;
+  categories: string[];
   SHELF_OPTIONS: string[];
   CONTAINER_OPTIONS: string[];
 }) {
