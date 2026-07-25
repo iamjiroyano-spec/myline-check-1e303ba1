@@ -522,7 +522,12 @@ function ReceivingPage() {
                           </div>
                         )}
 
-                        <div className="flex justify-end">
+                        <div className="flex flex-wrap justify-end gap-2">
+                          <button onClick={() => shareRecord(r)}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent">
+                            <Share2 className="h-3.5 w-3.5" />
+                            Copy public link
+                          </button>
                           <button onClick={() => deleteRecord(r.id)}
                             className="inline-flex items-center gap-1.5 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/10">
                             <Trash2 className="h-3.5 w-3.5" />
