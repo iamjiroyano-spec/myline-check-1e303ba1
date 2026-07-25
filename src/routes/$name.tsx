@@ -17,6 +17,8 @@ import {
   entryKey,
   readEntry,
   getShiftLabel,
+  getEffectiveSections,
+  effectiveCategorizedItems,
   type Entry,
   type SectionState,
   type Slot,
@@ -86,6 +88,19 @@ function loadSectionStruct(name: string, fallback: EditCategory[]): EditCategory
     if (raw) return JSON.parse(raw);
   } catch {}
   return fallback;
+}
+
+/** Load another station's category structure (saved edits, else defaults). */
+function loadStationStruct(stationName: string): EditCategory[] {
+  try {
+    const raw = lsStore.getItem(sectionStructKey(stationName));
+    if (raw) return JSON.parse(raw) as EditCategory[];
+  } catch {}
+  return effectiveCategorizedItems(stationName).map((c) => ({
+    group: c.group,
+    temp: /temp/i.test(c.group),
+    items: c.items.map((i) => ({ name: i.name, quality: "", shelf: "", container: "" })),
+  }));
 }
 
 export const Route = createFileRoute("/$name")({
