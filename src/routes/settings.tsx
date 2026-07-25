@@ -35,7 +35,7 @@ export const Route = createFileRoute("/settings")({
   component: SettingsPage,
 });
 
-type Tab = "branding" | "stations" | "team" | "statuses" | "shifts" | "shelves" | "containers" | "access";
+type Tab = "branding" | "stations" | "team" | "statuses" | "shifts" | "shelves" | "containers" | "access" | "admins";
 
 const ICON_OPTIONS = Object.keys(SECTION_ICONS);
 
@@ -137,6 +137,11 @@ function SettingsPage() {
               Access
             </TabPill>
           )}
+          {isAdmin && (
+            <TabPill active={tab === "admins"} onClick={() => setTab("admins")} icon={<ShieldCheck className="h-4 w-4" />}>
+              Admins
+            </TabPill>
+          )}
         </div>
 
         {tab === "branding" && <BrandingPanel />}
@@ -163,6 +168,7 @@ function SettingsPage() {
           />
         )}
         {tab === "access" && isAdmin && <AccessPanel />}
+        {tab === "admins" && isAdmin && <AdminsPanel />}
       </div>
     </AppShell>
   );
