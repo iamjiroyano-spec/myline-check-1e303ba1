@@ -167,6 +167,19 @@ function Sidebar({ date, shift }: { date: string; shift: Slot }) {
           </p>
         )}
         <ul className="space-y-0.5">
+          {(() => {
+            const m = loc.pathname.match(/^\/section\/(.+?)\/?$/);
+            let raw = m?.[1] ?? null;
+            if (raw) {
+              try {
+                raw = decodeURIComponent(raw);
+              } catch {
+                /* keep raw */
+              }
+            }
+            var activeSection = raw;
+            return null;
+          })()}
           {getEffectiveSections().map((s) => {
             const Icon = SECTION_ICONS[s.name] ?? Utensils;
             const { done, total } = sectionProgress(s.name, shift, date);
