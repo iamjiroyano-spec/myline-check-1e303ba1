@@ -93,9 +93,17 @@ export function AppShell({
   member,
   setMember,
 }: Ctx & { children: React.ReactNode }) {
+  const [mobileOpen, setMobileOpen] = useState(false);
   return (
     <div className="flex min-h-screen bg-background">
-      <Sidebar date={date} shift={shift} />
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/50 md:hidden"
+          onClick={() => setMobileOpen(false)}
+          aria-hidden
+        />
+      )}
+      <Sidebar date={date} shift={shift} mobileOpen={mobileOpen} onCloseMobile={() => setMobileOpen(false)} />
       <div className="flex min-w-0 flex-1 flex-col">
         <TopBar
           title={title}
@@ -105,6 +113,7 @@ export function AppShell({
           setShift={setShift}
           member={member}
           setMember={setMember}
+          onOpenMenu={() => setMobileOpen(true)}
         />
         <div className="min-w-0 flex-1 px-4 py-4 sm:px-6 sm:py-6 lg:px-10 lg:py-8">{children}</div>
       </div>
@@ -112,7 +121,17 @@ export function AppShell({
   );
 }
 
-function Sidebar({ date, shift }: { date: string; shift: Slot }) {
+function Sidebar({
+  date,
+  shift,
+  mobileOpen,
+  onCloseMobile,
+}: {
+  date: string;
+  shift: Slot;
+  mobileOpen: boolean;
+  onCloseMobile: () => void;
+}) {
   const loc = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   // Recompute progress on date/shift change and on storage updates
@@ -134,6 +153,12 @@ function Sidebar({ date, shift }: { date: string; shift: Slot }) {
     };
   }, []);
 
+  // Close the mobile drawer whenever the route changes.
+  useEffect(() => {
+    onCloseMobile();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loc.pathname]);
+
   const sectionMatch = loc.pathname.match(/^\/section\/(.+?)\/?$/);
   let activeSection: string | null = sectionMatch?.[1] ?? null;
   if (activeSection) {
@@ -146,10 +171,11 @@ function Sidebar({ date, shift }: { date: string; shift: Slot }) {
 
   return (
     <aside
-      className={`sidebar-shell sticky top-0 z-20 hidden h-screen shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-all md:flex ${
-        collapsed ? "w-16" : "w-64"
-      }`}
+      className={`sidebar-shell fixed inset-y-0 left-0 z-40 flex h-screen w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-transform md:sticky md:top-0 md:z-20 md:translate-x-0 md:transition-all ${
+        mobileOpen ? "translate-x-0" : "-translate-x-full"
+      } ${collapsed ? "md:w-16" : "md:w-64"}`}
     >
+
       <div className="flex items-center justify-between px-4 py-5">
         <Link to="/" className="flex items-center gap-2" suppressHydrationWarning>
           <BrandMark collapsed={collapsed} />
