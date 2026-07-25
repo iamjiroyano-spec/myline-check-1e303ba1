@@ -134,6 +134,16 @@ function Sidebar({ date, shift }: { date: string; shift: Slot }) {
     };
   }, []);
 
+  const sectionMatch = loc.pathname.match(/^\/section\/(.+?)\/?$/);
+  let activeSection: string | null = sectionMatch?.[1] ?? null;
+  if (activeSection) {
+    try {
+      activeSection = decodeURIComponent(activeSection);
+    } catch {
+      /* keep raw value */
+    }
+  }
+
   return (
     <aside
       className={`sidebar-shell sticky top-0 z-20 hidden h-screen shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-all md:flex ${
