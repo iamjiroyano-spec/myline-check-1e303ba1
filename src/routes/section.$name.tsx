@@ -1063,6 +1063,33 @@ function SectionPage() {
                           <img src={e.photo} alt="" className="h-full w-full object-cover" />
                         </button>
                       )}
+
+                      {struct.length > 1 && (
+                        <div className="relative shrink-0">
+                          <select
+                            value=""
+                            onChange={(ev) => {
+                              const to = ev.target.value;
+                              ev.target.value = "";
+                              if (to) quickMoveItem(cat.group, idx, to);
+                            }}
+                            title="Move to another category"
+                            aria-label={`Move ${item.name} to another category`}
+                            className="h-7 w-7 cursor-pointer appearance-none rounded-full border border-transparent bg-transparent text-transparent hover:bg-accent"
+                          >
+                            <option value="">Move to…</option>
+                            {struct
+                              .filter((c) => c.group !== cat.group)
+                              .map((c) => (
+                                <option key={c.group} value={c.group}>
+                                  {c.group}
+                                </option>
+                              ))}
+                          </select>
+                          <FolderInput className="pointer-events-none absolute left-1/2 top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 text-muted-foreground" />
+                        </div>
+                      )}
+
                       </div>
                       {flagged && (
                         <div className="border-t border-border/60 px-3 py-2.5">
