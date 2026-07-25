@@ -4,7 +4,8 @@ import { AppShell, useShellState } from "@/components/AppShell";
 import { lsStore } from "@/lib/lsStore";
 import { compressImageFile } from "@/lib/image";
 import { STAFF } from "@/lib/lineCheck";
-import { Camera, Trash2, X, PackageCheck, Plus, ChevronDown, ChevronUp, Pencil, Check as CheckIcon } from "lucide-react";
+import { Camera, Trash2, X, PackageCheck, Plus, ChevronDown, ChevronUp, Pencil, Check as CheckIcon, Share2 } from "lucide-react";
+import { publishSharedReceiving } from "@/lib/shareReceiving";
 
 export const Route = createFileRoute("/receiving")({
   head: () => ({
@@ -259,6 +260,20 @@ function ReceivingPage() {
     saveRecords(next);
   }
 
+  async function shareRecord(r: ReceivingRecord) {
+    try {
+      const url = await publishSharedReceiving(r);
+      try {
+        await navigator.clipboard.writeText(url);
+        alert(`Public link copied to clipboard:\n${url}`);
+      } catch {
+        prompt("Public share link:", url);
+      }
+    } catch (e) {
+      alert(`Could not create share link: ${(e as Error).message}`);
+    }
+  }
+
   return (
     <AppShell {...shell}>
       <div className="mx-auto w-full max-w-4xl px-4 py-6">
@@ -507,7 +522,12 @@ function ReceivingPage() {
                           </div>
                         )}
 
-                        <div className="flex justify-end">
+                        <div className="flex flex-wrap justify-end gap-2">
+                          <button onClick={() => shareRecord(r)}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent">
+                            <Share2 className="h-3.5 w-3.5" />
+                            Copy public link
+                          </button>
                           <button onClick={() => deleteRecord(r.id)}
                             className="inline-flex items-center gap-1.5 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/10">
                             <Trash2 className="h-3.5 w-3.5" />
