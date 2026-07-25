@@ -107,8 +107,10 @@ function emptyChecks(items: string[]): Checks {
 function ReceivingPage() {
   const shell = useShellState("Store Receiving Item Checklist");
   const [records, setRecords] = useState<ReceivingRecord[]>(() => loadRecords());
+  const [template, setTemplate] = useState<Template>(() => loadTemplate());
   const [form, setForm] = useState(() => {
     const { date, time } = nowParts();
+    const t = loadTemplate();
     return {
       date,
       time,
@@ -118,9 +120,9 @@ function ReceivingPage() {
       purchaseOrder: "",
       chillerCarTemp: "",
       productTemp: "",
-      tempChecks: emptyChecks(TEMP_ITEMS),
-      quantityChecks: emptyChecks(QUANTITY_ITEMS),
-      qualityChecks: emptyChecks(QUALITY_ITEMS),
+      tempChecks: emptyChecks(t.temp),
+      quantityChecks: emptyChecks(t.quantity),
+      qualityChecks: emptyChecks(t.quality),
       receiverName: "",
       signature: "",
       comments: "",
@@ -132,7 +134,7 @@ function ReceivingPage() {
   const [viewer, setViewer] = useState<string | null>(null);
 
   useEffect(() => {
-    const refresh = () => setRecords(loadRecords());
+    const refresh = () => { setRecords(loadRecords()); setTemplate(loadTemplate()); };
     window.addEventListener("linecheck:update", refresh);
     window.addEventListener("linecheck:scope-change", refresh);
     return () => {
@@ -140,6 +142,41 @@ function ReceivingPage() {
       window.removeEventListener("linecheck:scope-change", refresh);
     };
   }, []);
+
+  /* Template mutations (persist + keep current form's checks in sync) */
+  function updateTemplateGroup(
+    group: keyof Template,
+    updater: (arr: string[]) => string[],
+  ) {
+    setTemplate((prev) => {
+      const nextArr = updater(prev[group]);
+      const next = { ...prev, [group]: nextArr };
+      saveTemplate(next);
+      // Keep form checks aligned with the new item list
+      const checksKey = ({ temp: "tempChecks", quantity: "quantityChecks", quality: "qualityChecks" } as const)[group];
+      setForm((f) => {
+        const oldChecks = f[checksKey] as Checks;
+        const rebuilt: Checks = {};
+        nextArr.forEach((it) => { rebuilt[it] = !!oldChecks[it]; });
+        return { ...f, [checksKey]: rebuilt };
+      });
+      return next;
+    });
+  }
+  const addTemplateItem = (group: keyof Template, name: string) => {
+    const clean = name.trim();
+    if (!clean) return;
+    updateTemplateGroup(group, (arr) => (arr.includes(clean) ? arr : [...arr, clean]));
+  };
+  const renameTemplateItem = (group: keyof Template, oldName: string, newName: string) => {
+    const clean = newName.trim();
+    if (!clean || clean === oldName) return;
+    updateTemplateGroup(group, (arr) => arr.map((x) => (x === oldName ? clean : x)));
+  };
+  const removeTemplateItem = (group: keyof Template, name: string) => {
+    updateTemplateGroup(group, (arr) => arr.filter((x) => x !== name));
+  };
+
 
   const sorted = useMemo(
     () => [...records].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1)),
