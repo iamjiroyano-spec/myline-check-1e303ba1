@@ -170,8 +170,15 @@ function SectionPage() {
     () => `linecheck:section-comment:${name}:${shell.date}:${shell.shift}`,
     [name, shell.date, shell.shift],
   );
+  const commentPhotosKey = useMemo(
+    () => `linecheck:section-comment-photos:${name}:${shell.date}:${shell.shift}`,
+    [name, shell.date, shell.shift],
+  );
   const [state, setState] = useState<SectionState>(() => loadSection(name, shell.date));
   const [comment, setComment] = useState<string>("");
+  const [commentPhotos, setCommentPhotos] = useState<string[]>([]);
+  const [commentViewer, setCommentViewer] = useState<{ index: number; photo: string } | null>(null);
+
   const [editMode, setEditMode] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
   const [flaggedOnly, setFlaggedOnly] = useState(false);
