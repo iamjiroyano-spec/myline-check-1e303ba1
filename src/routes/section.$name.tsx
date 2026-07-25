@@ -1267,6 +1267,7 @@ type EditDraftDndProps = {
   updateItem: (ci: number, ii: number, patch: Partial<EditItem>) => void;
   removeItem: (ci: number, ii: number) => void;
   addItem: (ci: number) => void;
+  moveItemToCategory: (ci: number, ii: number, toCi: number) => void;
   SHELF_OPTIONS: string[];
   CONTAINER_OPTIONS: string[];
 };
