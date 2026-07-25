@@ -305,7 +305,7 @@ function ReceivingPage() {
             <Field label="Delivery Note / Invoice #">
               <input type="text" value={form.deliveryNote}
                 onChange={(e) => setForm({ ...form, deliveryNote: e.target.value })}
-                placeholder="e.g. W.N.R-03-4708-4709" className={inputCls} />
+                placeholder="e.g. LM1-1234" className={inputCls} />
             </Field>
             <Field label="Purchase Order #">
               <input type="text" value={form.purchaseOrder}
