@@ -272,19 +272,25 @@ function SectionPage() {
     } catch {}
   };
 
-  const addCommentPhoto = (file: File) => {
-    const MAX = 8 * 1024 * 1024;
+  const addCommentPhoto = async (file: File) => {
+    const MAX = 15 * 1024 * 1024;
     if (file.size > MAX) {
-      alert("Image too large (max 8MB).");
+      alert("Image too large (max 15MB).");
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = typeof reader.result === "string" ? reader.result : "";
-      if (dataUrl) persistCommentPhotos([...commentPhotos, dataUrl]);
-    };
-    reader.readAsDataURL(file);
+    const dataUrl = await compressImageFile(file);
+    if (dataUrl) {
+      setCommentPhotos((prev) => {
+        const next = [...prev, dataUrl];
+        try {
+          lsStore.setItem(commentPhotosKey, JSON.stringify(next));
+          window.dispatchEvent(new Event("linecheck:update"));
+        } catch {}
+        return next;
+      });
+    }
   };
+
 
 
   const setTemp = (group: string, value: string) => {
