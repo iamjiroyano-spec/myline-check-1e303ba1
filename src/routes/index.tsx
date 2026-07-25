@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { stationSlug } from "@/lib/slug";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell, useShellState } from "@/components/AppShell";
 import {
@@ -205,7 +206,7 @@ function Dashboard() {
                 {shell.member ? (
                   <Link
                     to="/$name"
-                    params={{ name: row.section }}
+                    params={{ name: stationSlug(row.section) }}
                     className="flex items-center gap-3 px-6 py-3.5 hover:bg-accent"
                   >
                     {rowInner}
