@@ -313,6 +313,18 @@ function SectionPage() {
     loadSectionStruct(name, defaultStruct),
   );
   const [draft, setDraft] = useState<EditCategory[]>(struct);
+  const viewSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+  const persistStruct = (next: EditCategory[]) => {
+    try {
+      lsStore.setItem(sectionStructKey(name), JSON.stringify(next));
+    } catch {}
+    setStruct(next);
+    setDraft(next);
+    window.dispatchEvent(new Event("linecheck:update"));
+  };
 
   useEffect(() => {
     setState(loadSection(name, shell.date));
