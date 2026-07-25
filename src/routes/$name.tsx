@@ -1159,31 +1159,46 @@ function SectionPage() {
                         </button>
                       )}
 
-                      {struct.length > 1 && (
+                      {(struct.length > 1 || otherStations.length > 0) && (
                         <div className="relative shrink-0">
                           <select
                             value=""
                             onChange={(ev) => {
-                              const to = ev.target.value;
+                              const raw = ev.target.value;
                               ev.target.value = "";
-                              if (to) quickMoveItem(cat.group, idx, to);
+                              if (!raw) return;
+                              const [st, grp] = raw.split("\u241F");
+                              if (st === name) quickMoveItem(cat.group, idx, grp);
+                              else quickMoveItemToStation(cat.group, idx, st, grp);
                             }}
-                            title="Move to another category"
-                            aria-label={`Move ${item.name} to another category`}
+                            title="Move to another category or station"
+                            aria-label={`Move ${item.name} to another category or station`}
                             className="h-7 w-7 cursor-pointer appearance-none rounded-full border border-transparent bg-transparent text-transparent hover:bg-accent"
                           >
                             <option value="" className="bg-popover text-popover-foreground">Move to…</option>
-                            {struct
-                              .filter((c) => c.group !== cat.group)
-                              .map((c) => (
-                                <option key={c.group} value={c.group} className="bg-popover text-popover-foreground">
-                                  {c.group}
-                                </option>
-                              ))}
+                            <optgroup label={name} className="bg-popover text-popover-foreground">
+                              {struct
+                                .filter((c) => c.group !== cat.group)
+                                .map((c) => (
+                                  <option key={c.group} value={`${name}\u241F${c.group}`} className="bg-popover text-popover-foreground">
+                                    {c.group}
+                                  </option>
+                                ))}
+                            </optgroup>
+                            {otherStations.map((st) => (
+                              <optgroup key={st.name} label={st.name} className="bg-popover text-popover-foreground">
+                                {st.groups.map((g) => (
+                                  <option key={g} value={`${st.name}\u241F${g}`} className="bg-popover text-popover-foreground">
+                                    {g}
+                                  </option>
+                                ))}
+                              </optgroup>
+                            ))}
                           </select>
                           <FolderInput className="pointer-events-none absolute left-1/2 top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 text-muted-foreground" />
                         </div>
                       )}
+
                       </div>
 
                       </div>
