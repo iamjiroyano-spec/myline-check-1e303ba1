@@ -298,11 +298,12 @@ function StationsGrid({
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={ids} strategy={rectSortingStrategy}>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {ordered.map((s) => (
-              <SortableStationCard key={s.name} station={s} disabled={disabled} />
+            {ordered.map((s, i) => (
+              <SortableStationCard key={s.name} station={s} disabled={disabled} colorIndex={i} />
             ))}
           </div>
         </SortableContext>
+
       </DndContext>
     </section>
   );
