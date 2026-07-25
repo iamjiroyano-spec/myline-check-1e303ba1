@@ -999,7 +999,7 @@ function SectionPage() {
 
               </div>
             </section>
-          ))}
+          );})}
 
       {!editMode && (
         <section className="mt-8">
