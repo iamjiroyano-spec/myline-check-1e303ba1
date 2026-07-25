@@ -327,6 +327,49 @@ function SectionPage() {
     window.dispatchEvent(new Event("linecheck:update"));
   };
 
+  // Quick action: move an item from one category to another (view mode),
+  // carrying its saved statuses/notes/photos along with it.
+  const quickMoveItem = (fromGroup: string, itemIdx: number, toGroup: string) => {
+    if (fromGroup === toGroup) return;
+    const fromCat = struct.find((c) => c.group === fromGroup);
+    const toCat = struct.find((c) => c.group === toGroup);
+    const moved = fromCat?.items[itemIdx];
+    if (!fromCat || !toCat || !moved) return;
+    const fromOcc = fromCat.items.slice(0, itemIdx).filter((i) => i.name === moved.name).length;
+    const toOcc = toCat.items.filter((i) => i.name === moved.name).length;
+
+    setState((prev) => {
+      const entries = { ...prev.entries };
+      const oldKey = entryKey(fromGroup, moved.name, fromOcc);
+      const newKey = entryKey(toGroup, moved.name, toOcc);
+      if (entries[oldKey]) {
+        entries[newKey] = entries[oldKey];
+        delete entries[oldKey];
+      }
+      // Re-key later duplicates in the source category (their occurrence shifts down).
+      let shift = fromOcc;
+      fromCat.items.forEach((it, j) => {
+        if (j <= itemIdx || it.name !== moved.name) return;
+        const cur = entryKey(fromGroup, it.name, shift + 1);
+        const next = entryKey(fromGroup, it.name, shift);
+        if (entries[cur]) {
+          entries[next] = entries[cur];
+          delete entries[cur];
+        }
+        shift += 1;
+      });
+      return { ...prev, entries };
+    });
+
+    persistStruct(
+      struct.map((c) => {
+        if (c.group === fromGroup) return { ...c, items: c.items.filter((_, j) => j !== itemIdx) };
+        if (c.group === toGroup) return { ...c, items: [...c.items, moved] };
+        return c;
+      }),
+    );
+  };
+
   useEffect(() => {
     setState(loadSection(name, shell.date));
   }, [name, shell.date]);
