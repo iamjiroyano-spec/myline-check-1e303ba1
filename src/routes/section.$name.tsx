@@ -971,7 +971,7 @@ function SectionPage() {
                         {checked && <Check className="h-4 w-4" strokeWidth={3} />}
                       </button>
 
-                      <div className="min-w-0 flex-1">
+                      <div className="min-w-0 flex-1 basis-[45%]">
                         <p
                           className={`truncate text-sm font-semibold ${
                             checked ? "text-muted-foreground line-through" : "text-foreground"
