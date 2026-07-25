@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { AppShell } from "@/components/AppShell";
+import { AppShell, useShellState } from "@/components/AppShell";
 import { lsStore } from "@/lib/lsStore";
 import { compressImageFile } from "@/lib/image";
 import { STAFF } from "@/lib/lineCheck";
