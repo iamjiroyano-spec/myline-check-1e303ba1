@@ -191,7 +191,7 @@ function Sidebar({ date, shift }: { date: string; shift: Slot }) {
                             className="block h-full transition-all"
                             style={{
                               width: `${pct}%`,
-                              background: `linear-gradient(90deg, hsl(${15 + pct * 0.35} 92% 45%), hsl(${20 + pct * 0.4} 96% 58%))`,
+                              background: `linear-gradient(90deg, hsl(${50 - pct * 0.22} 95% 55%), hsl(${45 - pct * 0.22} 95% 50%))`,
                             }}
                           />
                         </span>
