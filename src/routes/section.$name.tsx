@@ -1014,40 +1014,44 @@ function SectionPage() {
               </span>
             </div>
           </div>
-          <AutoGrowTextarea
-            value={comment}
-            onChange={onCommentChange}
-            placeholder={`Add a comment or feedback for ${name}…`}
-          />
-          {commentPhotos.length > 0 && (
-            <div className="mt-2 flex flex-wrap gap-2 px-1">
-              {commentPhotos.map((photo, idx) => (
-                <div key={idx} className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setCommentViewer({ index: idx, photo })}
-                    className="grid h-16 w-16 place-items-center overflow-hidden rounded-md border border-border"
-                    title="View reference photo"
-                    aria-label={`View reference photo ${idx + 1}`}
-                  >
-                    <img src={photo} alt="" className="h-full w-full object-cover" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (confirm("Remove this reference photo?")) {
-                        persistCommentPhotos(commentPhotos.filter((_, i) => i !== idx));
-                      }
-                    }}
-                    className="absolute -right-1.5 -top-1.5 grid h-5 w-5 place-items-center rounded-full border border-border bg-background text-muted-foreground shadow hover:text-foreground"
-                    aria-label={`Remove reference photo ${idx + 1}`}
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
+          <div className="rounded-md border border-input bg-background focus-within:border-foreground/40">
+            <AutoGrowTextarea
+              value={comment}
+              onChange={onCommentChange}
+              placeholder={`Add a comment or feedback for ${name}…`}
+              className="w-full resize-none border-0 bg-transparent px-3 py-2 text-sm outline-none focus:outline-none focus:ring-0"
+            />
+            {commentPhotos.length > 0 && (
+              <div className="flex flex-wrap gap-2 border-t border-border/60 px-3 py-2">
+                {commentPhotos.map((photo, idx) => (
+                  <div key={idx} className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setCommentViewer({ index: idx, photo })}
+                      className="grid h-16 w-16 place-items-center overflow-hidden rounded-md border border-border"
+                      title="View reference photo"
+                      aria-label={`View reference photo ${idx + 1}`}
+                    >
+                      <img src={photo} alt="" className="h-full w-full object-cover" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (confirm("Remove this reference photo?")) {
+                          persistCommentPhotos(commentPhotos.filter((_, i) => i !== idx));
+                        }
+                      }}
+                      className="absolute -right-1.5 -top-1.5 grid h-5 w-5 place-items-center rounded-full border border-border bg-background text-muted-foreground shadow hover:text-foreground"
+                      aria-label={`Remove reference photo ${idx + 1}`}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
         </section>
       )}
       {commentViewer && (
@@ -1190,10 +1194,12 @@ function AutoGrowTextarea({
   value,
   onChange,
   placeholder,
+  className,
 }: {
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
+  className?: string;
 }) {
   const ref = useRef<HTMLTextAreaElement | null>(null);
   useEffect(() => {
@@ -1209,10 +1215,14 @@ function AutoGrowTextarea({
       onChange={(ev) => onChange(ev.target.value)}
       placeholder={placeholder}
       rows={3}
-      className="w-full resize-none overflow-hidden rounded-2xl border border-border bg-card px-3 py-2.5 text-sm text-foreground outline-none transition focus:border-foreground/40"
+      className={
+        className ??
+        "w-full resize-none overflow-hidden rounded-2xl border border-border bg-card px-3 py-2.5 text-sm text-foreground outline-none transition focus:border-foreground/40"
+      }
     />
   );
 }
+
 
 // ---------- Drag-and-drop edit UI ----------
 
