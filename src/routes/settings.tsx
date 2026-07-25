@@ -35,7 +35,7 @@ export const Route = createFileRoute("/settings")({
   component: SettingsPage,
 });
 
-type Tab = "branding" | "stations" | "team" | "statuses" | "shifts" | "shelves" | "containers" | "access";
+type Tab = "branding" | "stations" | "team" | "statuses" | "shifts" | "shelves" | "containers" | "access" | "admins";
 
 const ICON_OPTIONS = Object.keys(SECTION_ICONS);
 
@@ -137,6 +137,11 @@ function SettingsPage() {
               Access
             </TabPill>
           )}
+          {isAdmin && (
+            <TabPill active={tab === "admins"} onClick={() => setTab("admins")} icon={<ShieldCheck className="h-4 w-4" />}>
+              Admins
+            </TabPill>
+          )}
         </div>
 
         {tab === "branding" && <BrandingPanel />}
@@ -163,6 +168,7 @@ function SettingsPage() {
           />
         )}
         {tab === "access" && isAdmin && <AccessPanel />}
+        {tab === "admins" && isAdmin && <AdminsPanel />}
       </div>
     </AppShell>
   );
@@ -1126,6 +1132,176 @@ function AccessPanel() {
               </li>
             );
           })}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+/* ============= ADMINS ============= */
+
+const ROOT_ADMINS = ["iamjiroyano@gmail.com", "hajime015@gmail.com"];
+
+function AdminsPanel() {
+  type Row = { email: string; is_admin: boolean };
+  const [rows, setRows] = useState<Row[]>([]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const load = async () => {
+    setLoading(true);
+    setError(null);
+    const { data, error } = await supabase
+      .from("allowed_emails")
+      .select("email, is_admin")
+      .eq("is_admin", true)
+      .order("email");
+    if (error) setError(error.message);
+    setRows((data ?? []) as Row[]);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    void load();
+  }, []);
+
+  const add = async () => {
+    const raw = input.trim().toLowerCase();
+    if (!raw) return;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(raw)) {
+      setError("Enter a valid email address.");
+      return;
+    }
+    if (ROOT_ADMINS.includes(raw) || rows.some((r) => r.email.toLowerCase() === raw)) {
+      setError("This email is already an admin.");
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    const { data: userData } = await supabase.auth.getUser();
+    // Check if the email already exists in allowed_emails
+    const { data: existing } = await supabase
+      .from("allowed_emails")
+      .select("email")
+      .ilike("email", raw)
+      .maybeSingle();
+    let err: string | null = null;
+    if (existing) {
+      const { error: uErr } = await supabase
+        .from("allowed_emails")
+        .update({ is_admin: true })
+        .eq("email", existing.email);
+      err = uErr?.message ?? null;
+    } else {
+      const { error: iErr } = await supabase
+        .from("allowed_emails")
+        .insert({ email: raw, is_admin: true, created_by: userData.user?.id ?? null });
+      err = iErr?.message ?? null;
+    }
+    setBusy(false);
+    if (err) {
+      setError(err);
+      return;
+    }
+    setInput("");
+    void load();
+  };
+
+  const revoke = async (email: string) => {
+    if (ROOT_ADMINS.includes(email.toLowerCase())) return;
+    if (!confirm(`Revoke admin access from ${email}? They will remain on the allowed list.`)) return;
+    const { error } = await supabase
+      .from("allowed_emails")
+      .update({ is_admin: false })
+      .eq("email", email);
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    void load();
+  };
+
+  return (
+    <section className="rounded-2xl border border-border bg-card p-5">
+      <div className="mb-3 flex items-center gap-2">
+        <ShieldCheck className="h-5 w-5 text-foreground" />
+        <h3 className="text-lg font-bold">Admin Management</h3>
+      </div>
+      <p className="mb-4 text-sm text-muted-foreground">
+        Admins can manage stations, team members, allowed users, and other admins.
+        Root admins ({ROOT_ADMINS.join(", ")}) cannot be removed.
+      </p>
+
+      <div className="mb-4 flex gap-2">
+        <input
+          type="email"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              void add();
+            }
+          }}
+          placeholder="new-admin@example.com"
+          className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-foreground"
+        />
+        <button
+          type="button"
+          onClick={() => void add()}
+          disabled={busy}
+          className="flex items-center gap-1 rounded-lg bg-foreground px-3 py-2 text-sm font-semibold text-background hover:opacity-90 disabled:opacity-50"
+        >
+          <Plus className="h-4 w-4" />
+          Add Admin
+        </button>
+      </div>
+
+      {error && (
+        <p role="alert" className="mb-3 text-sm text-red-600">
+          {error}
+        </p>
+      )}
+
+      {loading ? (
+        <p className="text-sm text-muted-foreground">Loading…</p>
+      ) : (
+        <ul className="divide-y divide-border rounded-lg border border-border">
+          {ROOT_ADMINS.map((e) => (
+            <li key={`root-${e}`} className="flex items-center justify-between gap-3 p-3">
+              <div className="flex items-center gap-2">
+                <span className="text-sm">{e}</span>
+                <span className="rounded-full bg-foreground/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-foreground">
+                  Root Admin
+                </span>
+              </div>
+            </li>
+          ))}
+          {rows
+            .filter((r) => !ROOT_ADMINS.includes(r.email.toLowerCase()))
+            .map((r) => (
+              <li key={r.email} className="flex items-center justify-between gap-3 p-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">{r.email}</span>
+                  <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-foreground">
+                    Admin
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void revoke(r.email)}
+                  className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                  aria-label={`Revoke admin ${r.email}`}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </li>
+            ))}
+          {rows.filter((r) => !ROOT_ADMINS.includes(r.email.toLowerCase())).length === 0 && (
+            <li className="p-3 text-sm text-muted-foreground">No additional admins yet.</li>
+          )}
         </ul>
       )}
     </section>
