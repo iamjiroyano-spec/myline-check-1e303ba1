@@ -2,6 +2,7 @@ import { lsStore } from "@/lib/lsStore";
 import { compressImageFile } from "@/lib/image";
 
 import { createFileRoute, useRouter } from "@tanstack/react-router";
+import type React from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AppShell, useShellState } from "@/components/AppShell";
 import {
