@@ -1468,6 +1468,26 @@ function SortableItem({
           placeholder="Item name"
           className="flex-1 rounded-lg border border-input bg-card px-3 py-1.5 text-sm outline-none focus:border-foreground/30"
         />
+        <select
+          value=""
+          onChange={(e) => {
+            const toCi = Number(e.target.value);
+            if (!Number.isNaN(toCi)) moveItemToCategory(ci, ii, toCi);
+            e.currentTarget.selectedIndex = 0;
+          }}
+          title="Move to category"
+          aria-label="Move to category"
+          className="max-w-[140px] rounded-lg border border-input bg-card px-2 py-1.5 text-xs outline-none focus:border-foreground/30"
+        >
+          <option value="">Move to…</option>
+          {categories.map((g, idx) =>
+            idx === ci ? null : (
+              <option key={idx} value={idx}>
+                {g || `Category ${idx + 1}`}
+              </option>
+            ),
+          )}
+        </select>
         <button
           onClick={() => removeItem(ci, ii)}
           className="grid h-7 w-7 place-items-center rounded-md text-muted-foreground hover:bg-danger-soft hover:text-danger"
