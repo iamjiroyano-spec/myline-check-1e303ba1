@@ -177,8 +177,8 @@ function Sidebar({ date, shift }: { date: string; shift: Slot }) {
                   params={{ name: s.name }}
                   className={`group flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium transition-colors ${
                     active
-                      ? "bg-sidebar-accent text-foreground"
-                      : "text-muted-foreground hover:bg-sidebar-accent hover:text-foreground"
+                      ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
+                      : "text-sidebar-foreground/80 sidebar-hover"
                   }`}
                 >
                   <Icon className="h-4 w-4 shrink-0" />
