@@ -107,7 +107,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 function RootShell({ children }: { children: ReactNode }) {
   const themeInit = `(function(){try{var t=localStorage.getItem('linecheck:theme');var m=window.matchMedia('(prefers-color-scheme: dark)').matches;if(t==='dark'||(!t&&m)){document.documentElement.classList.add('dark');}var p=localStorage.getItem('linecheck:theme-preset');if(p&&p!=='terracotta'){document.documentElement.setAttribute('data-theme',p);}if(p==='custom'){var css=localStorage.getItem('linecheck:theme-custom-css');if(css){var s=document.createElement('style');s.id='linecheck-custom-theme';s.textContent=css;document.head.appendChild(s);}}}catch(e){}})();`;
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
         <script dangerouslySetInnerHTML={{ __html: themeInit }} />
