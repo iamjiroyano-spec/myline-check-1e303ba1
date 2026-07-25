@@ -815,12 +815,12 @@ function SectionPage() {
               key={cat.group}
               className="mt-6 rounded-2xl border border-border p-3 category-block"
               style={{
-                background: `light-dark(${color.bg}, ${color.darkBg})`,
-                borderLeft: `4px solid ${color.accent}`,
+                background: bg,
+                borderLeft: `4px solid ${accent}`,
               }}
             >
               <div className="mb-2 flex items-center justify-between px-1">
-                <h3 className="text-xs font-bold uppercase tracking-[0.18em]" style={{ color: color.accent }}>
+                <h3 className="text-xs font-bold uppercase tracking-[0.18em]" style={{ color: accent }}>
                   {cat.group}
                 </h3>
                 {cat.temp && (
