@@ -160,7 +160,7 @@ function Sidebar({ date, shift }: { date: string; shift: Slot }) {
 
       <div className="mt-4 flex-1 overflow-y-auto px-3 pb-6" data-tick={tick}>
         {!collapsed && (
-          <p className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+          <p className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-sidebar-foreground/60">
             Stations
           </p>
         )}
