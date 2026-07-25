@@ -798,10 +798,29 @@ function SectionPage() {
             return [cat, visible] as const;
           })
           .filter(([, visible]) => visible.length > 0)
-          .map(([cat, items]) => (
-            <section key={cat.group} className="mt-6">
+          .map(([cat, items], catIdx) => {
+            const palette = [
+              "oklch(0.65 0.18 250)",
+              "oklch(0.65 0.18 145)",
+              "oklch(0.70 0.18 55)",
+              "oklch(0.65 0.20 330)",
+              "oklch(0.65 0.15 195)",
+              "oklch(0.65 0.20 25)",
+              "oklch(0.65 0.18 285)",
+            ];
+            const accent = palette[catIdx % palette.length];
+            const bg = `color-mix(in oklch, ${accent} 12%, var(--card))`;
+            return (
+            <section
+              key={cat.group}
+              className="mt-6 rounded-2xl border border-border p-3 category-block"
+              style={{
+                background: bg,
+                borderLeft: `4px solid ${accent}`,
+              }}
+            >
               <div className="mb-2 flex items-center justify-between px-1">
-                <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                <h3 className="text-xs font-bold uppercase tracking-[0.18em]" style={{ color: accent }}>
                   {cat.group}
                 </h3>
                 {cat.temp && (
@@ -981,7 +1000,7 @@ function SectionPage() {
 
               </div>
             </section>
-          ))}
+          );})}
 
       {!editMode && (
         <section className="mt-8">
