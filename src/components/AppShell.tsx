@@ -156,6 +156,7 @@ function Sidebar({ date, shift }: { date: string; shift: Slot }) {
       <nav className="px-3">
         <NavItem to="/" icon={LayoutDashboard} label="Dashboard" active={loc.pathname === "/"} collapsed={collapsed} />
         <NavItem to="/history" icon={History} label="History" active={loc.pathname === "/history"} collapsed={collapsed} />
+        <NavItem to="/receiving" icon={PackageCheck} label="Receiving" active={loc.pathname === "/receiving"} collapsed={collapsed} />
         <NavItem to="/settings" icon={Settings} label="Settings" active={loc.pathname === "/settings"} collapsed={collapsed} />
       </nav>
 
