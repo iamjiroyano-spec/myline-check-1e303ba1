@@ -1138,25 +1138,22 @@ function SectionPage() {
                 accept="image/*"
                 capture="environment"
                 className="hidden"
-                onChange={(ev) => {
+                onChange={async (ev) => {
                   const file = ev.target.files?.[0];
                   ev.target.value = "";
                   if (!file || !viewer) return;
-                  const MAX = 8 * 1024 * 1024;
+                  const MAX = 15 * 1024 * 1024;
                   if (file.size > MAX) {
-                    alert("Image too large (max 8MB).");
+                    alert("Image too large (max 15MB).");
                     return;
                   }
-                  const reader = new FileReader();
-                  reader.onload = () => {
-                    const dataUrl = typeof reader.result === "string" ? reader.result : "";
-                    if (dataUrl) {
-                      setEntry(viewer.group, viewer.name, viewer.occ, { photo: dataUrl });
-                      setViewer({ ...viewer, photo: dataUrl });
-                    }
-                  };
-                  reader.readAsDataURL(file);
+                  const dataUrl = await compressImageFile(file);
+                  if (dataUrl) {
+                    setEntry(viewer.group, viewer.name, viewer.occ, { photo: dataUrl });
+                    setViewer({ ...viewer, photo: dataUrl });
+                  }
                 }}
+
               />
               <button
                 type="button"
