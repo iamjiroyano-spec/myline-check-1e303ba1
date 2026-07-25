@@ -477,47 +477,30 @@ function StationRow({
 }) {
   return (
     <div className="rounded-2xl border border-border bg-muted/30">
-      <div className="flex items-center gap-2 pr-2">
-        <button
-          onClick={onToggle}
-          className="flex flex-1 items-center gap-3 rounded-2xl p-3 text-left transition-colors hover:bg-muted/50"
-          aria-expanded={expanded}
-        >
-          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-card">
-            {station.complete ? (
-              <CheckCircle2 className="h-4 w-4 text-success" />
-            ) : station.flagged > 0 ? (
-              <AlertTriangle className="h-4 w-4 text-danger" />
-            ) : (
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
-            )}
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-bold tracking-tight">{station.name}</p>
-          </div>
-          <ChevronDown
-            className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${
-              expanded ? "rotate-180" : ""
-            }`}
-          />
-        </button>
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onShare();
-          }}
-          className="grid h-8 w-8 shrink-0 place-items-center rounded-xl border border-border bg-card text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-          aria-label="Copy share link"
-          title={copied ? "Link copied!" : "Copy share link"}
-        >
-          {copied ? (
+      <button
+        onClick={onToggle}
+        className="flex w-full items-center gap-3 rounded-2xl p-3 text-left transition-colors hover:bg-muted/50"
+        aria-expanded={expanded}
+      >
+        <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-card">
+          {station.complete ? (
             <CheckCircle2 className="h-4 w-4 text-success" />
+          ) : station.flagged > 0 ? (
+            <AlertTriangle className="h-4 w-4 text-danger" />
           ) : (
-            <Share2 className="h-4 w-4" />
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
           )}
-        </button>
-      </div>
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-bold tracking-tight">{station.name}</p>
+        </div>
+        <ChevronDown
+          className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${
+            expanded ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
 
       {expanded && (
         <div className="border-t border-dashed border-border p-3">
