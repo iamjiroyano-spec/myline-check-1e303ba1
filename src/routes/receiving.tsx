@@ -485,9 +485,9 @@ function ReceivingPage() {
                           <Info label="Signature" value={r.signature} />
                         </dl>
 
-                        <ChecklistView title="1. Temperature Check" items={TEMP_ITEMS} checks={r.tempChecks} />
-                        <ChecklistView title="2. Quantity Check" items={QUANTITY_ITEMS} checks={r.quantityChecks} />
-                        <ChecklistView title="3. Quality Check" items={QUALITY_ITEMS} checks={r.qualityChecks} />
+                        <ChecklistView title="1. Temperature Check" items={Object.keys(r.tempChecks || {})} checks={r.tempChecks} />
+                        <ChecklistView title="2. Quantity Check" items={Object.keys(r.quantityChecks || {})} checks={r.quantityChecks} />
+                        <ChecklistView title="3. Quality Check" items={Object.keys(r.qualityChecks || {})} checks={r.qualityChecks} />
 
                         {r.comments && (
                           <div>
