@@ -184,6 +184,8 @@
   --info: oklch(0.75 0.12 245);
   --info-soft: oklch(0.3 0.05 245);
 
+  --day-pill-bg: oklch(0.99 0.005 80);
+
   --destructive: oklch(0.7 0.19 22);
   --destructive-foreground: oklch(0.96 0.015 75);
 
