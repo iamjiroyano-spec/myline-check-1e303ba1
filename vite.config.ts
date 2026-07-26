@@ -20,8 +20,10 @@ export default defineConfig({
         registerType: "autoUpdate",
         injectRegister: null,
         filename: "sw.js",
+        outDir: "dist/client",
         devOptions: { enabled: false },
         manifest: false,
+
         workbox: {
           globPatterns: ["**/*.{js,css,woff,woff2,svg,png,ico}"],
           navigateFallback: "/",
