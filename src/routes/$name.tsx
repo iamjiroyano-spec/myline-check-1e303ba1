@@ -1563,22 +1563,8 @@ function SortableCategory({
     opacity: isDragging ? 0.6 : 1,
   };
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
-  );
   const itemIds = cat.items.map((_, i) => `item-${ci}-${i}`);
 
-  const handleItemDragEnd = (e: DragEndEvent) => {
-    const { active, over } = e;
-    if (!over || active.id === over.id) return;
-    const from = itemIds.indexOf(String(active.id));
-    const to = itemIds.indexOf(String(over.id));
-    if (from < 0 || to < 0) return;
-    setDraft((d) =>
-      d.map((c, idx) => (idx === ci ? { ...c, items: arrayMove(c.items, from, to) } : c)),
-    );
-  };
 
   return (
     <div ref={setNodeRef} style={style} className="rounded-xl border border-border bg-background/40 p-3">
