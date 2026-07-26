@@ -398,7 +398,7 @@ function ClosingPage() {
               className={inputCls}
             >
               <option value="">Add team member…</option>
-              {STAFF.filter((s) => !form.crew.some((c) => c.member === s)).map((s) => (
+              {members.filter((s) => !form.crew.some((c) => c.member === s)).map((s) => (
                 <option key={s} value={s} className="bg-popover text-popover-foreground">
                   {s}
                 </option>
