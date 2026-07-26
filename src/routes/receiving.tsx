@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AppShell, useShellState } from "@/components/AppShell";
 import { lsStore } from "@/lib/lsStore";
 import { compressImageFile } from "@/lib/image";
-import { Camera, Trash2, X, PackageCheck, Plus, ChevronDown, ChevronUp, Pencil, Check as CheckIcon, Share2 } from "lucide-react";
+import { Camera, Trash2, X, PackageCheck, Plus, ChevronDown, ChevronUp, Pencil, Image as ImageIcon, Check as CheckIcon, Share2 } from "lucide-react";
 import { publishSharedReceiving } from "@/lib/shareReceiving";
 
 export const Route = createFileRoute("/receiving")({
@@ -154,7 +154,9 @@ function ReceivingPage() {
   }, []);
 
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [viewer, setViewer] = useState<string | null>(null);
+
 
   useEffect(() => {
     const refresh = () => { setRecords(loadRecords()); setTemplate(loadTemplate()); };
@@ -225,6 +227,7 @@ function ReceivingPage() {
 
   function resetForm() {
     const { date, time } = nowParts();
+    setEditingId(null);
     setForm({
       date, time,
       branch: "",
@@ -244,14 +247,36 @@ function ReceivingPage() {
     });
   }
 
+  function editRecord(r: ReceivingRecord) {
+    setEditingId(r.id);
+    setForm({
+      date: r.date,
+      time: r.time,
+      branch: r.branch,
+      driver: r.driver,
+      deliveryNote: r.deliveryNote,
+      purchaseOrder: r.purchaseOrder,
+      chillerCarTemp: r.chillerCarTemp,
+      productTemp: r.productTemp,
+      tempChecks: { ...r.tempChecks },
+      quantityChecks: { ...r.quantityChecks },
+      qualityChecks: { ...r.qualityChecks },
+      receiverName: r.receiverName,
+      signature: r.signature ?? "",
+      comments: r.comments,
+      checkedBy: r.checkedBy,
+      photos: [...r.photos],
+    });
+    setExpanded(null);
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   function submit() {
     if (!form.receiverName.trim() && !form.checkedBy.trim()) {
       alert("Please enter the Receiver name (or select who checked).");
       return;
     }
-    const rec: ReceivingRecord = {
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-      createdAt: new Date().toISOString(),
+    const values = {
       date: form.date,
       time: form.time,
       branch: form.branch.trim(),
@@ -269,11 +294,24 @@ function ReceivingPage() {
       checkedBy: (form.checkedBy || form.receiverName).trim(),
       photos: form.photos,
     };
+    if (editingId) {
+      const next = records.map((r) => (r.id === editingId ? { ...r, ...values } : r));
+      setRecords(next);
+      saveRecords(next);
+      resetForm();
+      return;
+    }
+    const rec: ReceivingRecord = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      createdAt: new Date().toISOString(),
+      ...values,
+    };
     const next = [rec, ...records];
     setRecords(next);
     saveRecords(next);
     resetForm();
   }
+
 
   function deleteRecord(id: string) {
     if (!confirm("Delete this receiving record?")) return;
@@ -437,16 +475,28 @@ function ReceivingPage() {
 
           {/* Photos */}
           <div className="mt-4">
-            <div className="mb-2 flex items-center justify-between">
+            <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
               <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Photos
               </span>
-              <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-input bg-background px-3 py-1.5 text-sm font-medium hover:bg-accent">
-                <Camera className="h-4 w-4" />
-                Add photo
-                <input type="file" accept="image/*" capture="environment" className="hidden"
-                  onChange={(e) => { addPhoto(e.target.files?.[0]); e.target.value = ""; }} />
-              </label>
+              <div className="flex flex-wrap items-center gap-2">
+                <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-input bg-background px-3 py-1.5 text-sm font-medium hover:bg-accent">
+                  <Camera className="h-4 w-4" />
+                  Camera
+                  <input type="file" accept="image/*" capture="environment" className="hidden"
+                    onChange={(e) => { addPhoto(e.target.files?.[0]); e.target.value = ""; }} />
+                </label>
+                <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-input bg-background px-3 py-1.5 text-sm font-medium hover:bg-accent">
+                  <ImageIcon className="h-4 w-4" />
+                  Gallery
+                  <input type="file" accept="image/*" multiple className="hidden"
+                    onChange={async (e) => {
+                      const files = Array.from(e.target.files ?? []);
+                      e.target.value = "";
+                      for (const f of files) await addPhoto(f);
+                    }} />
+                </label>
+              </div>
             </div>
             {form.photos.length === 0 ? (
               <p className="rounded-lg border border-dashed border-border bg-background/40 px-3 py-4 text-center text-xs text-muted-foreground">
@@ -469,16 +519,22 @@ function ReceivingPage() {
             )}
           </div>
 
-          <div className="mt-4 flex justify-end gap-2">
+          <div className="mt-4 flex flex-wrap items-center justify-end gap-2">
+            {editingId && (
+              <span className="mr-auto rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-secondary-foreground">
+                Editing saved delivery
+              </span>
+            )}
             <button onClick={resetForm}
               className="rounded-lg border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-accent">
-              Clear
+              {editingId ? "Cancel edit" : "Clear"}
             </button>
             <button onClick={submit}
               className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90">
-              <Plus className="h-4 w-4" />
-              Save delivery
+              {editingId ? <CheckIcon className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+              {editingId ? "Update delivery" : "Save delivery"}
             </button>
+
           </div>
         </section>
 
@@ -555,7 +611,13 @@ function ReceivingPage() {
                         )}
 
                         <div className="flex flex-wrap justify-end gap-2">
+                          <button onClick={() => editRecord(r)}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent">
+                            <Pencil className="h-3.5 w-3.5" />
+                            Edit
+                          </button>
                           <button onClick={() => shareRecord(r)}
+
                             className="inline-flex items-center gap-1.5 rounded-lg border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent">
                             <Share2 className="h-3.5 w-3.5" />
                             Copy public link

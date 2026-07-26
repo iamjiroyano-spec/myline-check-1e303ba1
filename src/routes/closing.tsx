@@ -10,7 +10,9 @@ import {
   ChevronDown,
   ChevronUp,
   ClipboardCheck,
+  Image as ImageIcon,
   Pencil,
+
   Plus,
   Share2,
   Trash2,
@@ -173,11 +175,13 @@ function ClosingPage() {
     };
   });
   const [editing, setEditing] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [newItem, setNewItem] = useState("");
   const [editKey, setEditKey] = useState<string | null>(null);
   const [editVal, setEditVal] = useState("");
   const [expanded, setExpanded] = useState<string | null>(null);
   const [viewer, setViewer] = useState<string | null>(null);
+
 
   useEffect(() => {
     const refresh = () => {
@@ -283,6 +287,7 @@ function ClosingPage() {
 
   function resetForm() {
     const { date, time } = nowParts();
+    setEditingId(null);
     setForm({
       date,
       time,
@@ -295,10 +300,47 @@ function ClosingPage() {
     });
   }
 
+  function editRecord(r: ClosingRecord) {
+    setEditingId(r.id);
+    setForm({
+      date: r.date,
+      time: r.time,
+      branch: r.branch,
+      closedBy: r.closedBy,
+      crew: (r.crew ?? []).map((c) => ({ member: c.member, stations: [...c.stations] })),
+      checks: { ...r.checks },
+      notes: r.notes,
+      photos: [...r.photos],
+    });
+    setExpanded(null);
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   function submit() {
     const crew = form.crew.filter((c) => c.member.trim());
     if (!form.closedBy.trim() && crew.length === 0) {
       alert("Please select at least one team member closing.");
+      return;
+    }
+    if (editingId) {
+      const next = records.map((r) =>
+        r.id === editingId
+          ? {
+              ...r,
+              date: form.date,
+              time: form.time,
+              branch: form.branch.trim(),
+              closedBy: form.closedBy.trim() || crew.map((c) => c.member).join(", "),
+              crew,
+              checks: form.checks,
+              notes: form.notes.trim(),
+              photos: form.photos,
+            }
+          : r,
+      );
+      setRecords(next);
+      saveRecords(next);
+      resetForm();
       return;
     }
     const rec: ClosingRecord = {
@@ -318,6 +360,7 @@ function ClosingPage() {
     saveRecords(next);
     resetForm();
   }
+
 
   function deleteRecord(id: string) {
     if (!confirm("Delete this closing report?")) return;
@@ -614,25 +657,43 @@ function ClosingPage() {
 
           {/* Photos */}
           <div className="mt-4">
-            <div className="mb-2 flex items-center justify-between">
+            <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
               <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Photos
               </span>
-              <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-input bg-background px-3 py-1.5 text-sm font-medium hover:bg-accent">
-                <Camera className="h-4 w-4" />
-                Add photo
-                <input
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  className="hidden"
-                  onChange={(e) => {
-                    addPhoto(e.target.files?.[0]);
-                    e.target.value = "";
-                  }}
-                />
-              </label>
+              <div className="flex flex-wrap items-center gap-2">
+                <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-input bg-background px-3 py-1.5 text-sm font-medium hover:bg-accent">
+                  <Camera className="h-4 w-4" />
+                  Camera
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    className="hidden"
+                    onChange={(e) => {
+                      addPhoto(e.target.files?.[0]);
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
+                <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-input bg-background px-3 py-1.5 text-sm font-medium hover:bg-accent">
+                  <ImageIcon className="h-4 w-4" />
+                  Gallery
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={async (e) => {
+                      const files = Array.from(e.target.files ?? []);
+                      e.target.value = "";
+                      for (const f of files) await addPhoto(f);
+                    }}
+                  />
+                </label>
+              </div>
             </div>
+
             {form.photos.length === 0 ? (
               <p className="rounded-lg border border-dashed border-border bg-background/40 px-3 py-4 text-center text-xs text-muted-foreground">
                 No photos attached yet.
@@ -663,20 +724,26 @@ function ClosingPage() {
             )}
           </div>
 
-          <div className="mt-4 flex flex-wrap justify-end gap-2">
+          <div className="mt-4 flex flex-wrap items-center justify-end gap-2">
+            {editingId && (
+              <span className="mr-auto rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-secondary-foreground">
+                Editing saved report
+              </span>
+            )}
             <button
               onClick={resetForm}
               className="rounded-lg border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-accent"
             >
-              Clear
+              {editingId ? "Cancel edit" : "Clear"}
             </button>
             <button
               onClick={submit}
               className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
             >
-              <Plus className="h-4 w-4" />
-              Save closing report
+              {editingId ? <CheckIcon className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+              {editingId ? "Update report" : "Save closing report"}
             </button>
+
           </div>
         </section>
 
@@ -802,6 +869,14 @@ function ClosingPage() {
 
                         <div className="flex flex-wrap justify-end gap-2">
                           <button
+                            onClick={() => editRecord(r)}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                            Edit
+                          </button>
+                          <button
+
                             onClick={() => shareRecord(r)}
                             className="inline-flex items-center gap-1.5 rounded-lg border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent"
                           >
