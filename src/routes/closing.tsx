@@ -130,11 +130,14 @@ function ClosingPage() {
     read();
     window.addEventListener("storage", read);
     window.addEventListener("focus", read);
+    window.addEventListener("linecheck:staff-update", read);
     return () => {
       window.removeEventListener("storage", read);
       window.removeEventListener("focus", read);
+      window.removeEventListener("linecheck:staff-update", read);
     };
   }, []);
+
 
   const [form, setForm] = useState(() => {
     const { date, time } = nowParts();
