@@ -48,6 +48,8 @@
   --color-sage: var(--sage);
   --color-sage-foreground: var(--sage-foreground);
   --color-sage-deep: var(--sage-deep);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-border: var(--border);
