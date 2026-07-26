@@ -799,7 +799,7 @@ function TeamPanel() {
             <Users className="h-4 w-4 text-muted-foreground" />
             <span className="font-semibold tracking-tight">{m}</span>
             <button
-              onClick={() => setMembers((arr) => arr.filter((_, j) => j !== i))}
+              onClick={() => remove(i)}
               className="ml-auto grid h-7 w-7 place-items-center rounded-md text-muted-foreground hover:bg-danger-soft hover:text-danger"
               aria-label="Delete"
             >
