@@ -611,7 +611,13 @@ function ReceivingPage() {
                         )}
 
                         <div className="flex flex-wrap justify-end gap-2">
+                          <button onClick={() => editRecord(r)}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent">
+                            <Pencil className="h-3.5 w-3.5" />
+                            Edit
+                          </button>
                           <button onClick={() => shareRecord(r)}
+
                             className="inline-flex items-center gap-1.5 rounded-lg border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent">
                             <Share2 className="h-3.5 w-3.5" />
                             Copy public link
