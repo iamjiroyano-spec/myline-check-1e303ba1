@@ -115,6 +115,27 @@ function ClosingPage() {
   const shell = useShellState("Closing Report");
   const [records, setRecords] = useState<ClosingRecord[]>(() => loadRecords());
   const [template, setTemplate] = useState<string[]>(() => loadTemplate());
+  // Manager / team list managed in Settings → Manager tab
+  const [members, setMembers] = useState<string[]>(STAFF);
+  useEffect(() => {
+    const read = () => {
+      try {
+        const raw = lsStore.getItem("linecheck:settings:staff");
+        const parsed = raw ? JSON.parse(raw) : null;
+        setMembers(Array.isArray(parsed) && parsed.length ? parsed : STAFF);
+      } catch {
+        setMembers(STAFF);
+      }
+    };
+    read();
+    window.addEventListener("storage", read);
+    window.addEventListener("focus", read);
+    return () => {
+      window.removeEventListener("storage", read);
+      window.removeEventListener("focus", read);
+    };
+  }, []);
+
   const [form, setForm] = useState(() => {
     const { date, time } = nowParts();
     return {
