@@ -285,6 +285,7 @@ function ClosingPage() {
 
   function resetForm() {
     const { date, time } = nowParts();
+    setEditingId(null);
     setForm({
       date,
       time,
@@ -297,10 +298,47 @@ function ClosingPage() {
     });
   }
 
+  function editRecord(r: ClosingRecord) {
+    setEditingId(r.id);
+    setForm({
+      date: r.date,
+      time: r.time,
+      branch: r.branch,
+      closedBy: r.closedBy,
+      crew: (r.crew ?? []).map((c) => ({ member: c.member, stations: [...c.stations] })),
+      checks: { ...r.checks },
+      notes: r.notes,
+      photos: [...r.photos],
+    });
+    setExpanded(null);
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   function submit() {
     const crew = form.crew.filter((c) => c.member.trim());
     if (!form.closedBy.trim() && crew.length === 0) {
       alert("Please select at least one team member closing.");
+      return;
+    }
+    if (editingId) {
+      const next = records.map((r) =>
+        r.id === editingId
+          ? {
+              ...r,
+              date: form.date,
+              time: form.time,
+              branch: form.branch.trim(),
+              closedBy: form.closedBy.trim() || crew.map((c) => c.member).join(", "),
+              crew,
+              checks: form.checks,
+              notes: form.notes.trim(),
+              photos: form.photos,
+            }
+          : r,
+      );
+      setRecords(next);
+      saveRecords(next);
+      resetForm();
       return;
     }
     const rec: ClosingRecord = {
@@ -320,6 +358,7 @@ function ClosingPage() {
     saveRecords(next);
     resetForm();
   }
+
 
   function deleteRecord(id: string) {
     if (!confirm("Delete this closing report?")) return;
