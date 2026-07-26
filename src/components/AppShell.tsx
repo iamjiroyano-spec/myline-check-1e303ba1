@@ -16,6 +16,7 @@ import {
   History,
   Settings,
   PackageCheck,
+  ClipboardCheck,
   ChevronLeft,
   Calendar,
   Clock,
@@ -186,7 +187,7 @@ function Sidebar({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loc.pathname]);
 
-  const RESERVED_PATHS = ["", "auth", "history", "receiving", "settings", "r", "s", "section"];
+  const RESERVED_PATHS = ["", "auth", "history", "receiving", "closing", "settings", "r", "s", "c", "section"];
   const firstSeg = loc.pathname.split("/")[1] ?? "";
   const sectionMatch = RESERVED_PATHS.includes(firstSeg) ? null : ([null, firstSeg] as const);
   let activeSection: string | null = sectionMatch?.[1] ?? null;
@@ -233,6 +234,7 @@ function Sidebar({
         <NavItem to="/" icon={LayoutDashboard} label="Dashboard" active={loc.pathname === "/"} collapsed={collapsed} activeColor={activeDayColor} />
         <NavItem to="/history" icon={History} label="History" active={loc.pathname === "/history"} collapsed={collapsed} activeColor={activeDayColor} />
         <NavItem to="/receiving" icon={PackageCheck} label="Receiving" active={loc.pathname === "/receiving"} collapsed={collapsed} activeColor={activeDayColor} />
+        <NavItem to="/closing" icon={ClipboardCheck} label="Closing Report" active={loc.pathname === "/closing"} collapsed={collapsed} activeColor={activeDayColor} />
         <NavItem to="/settings" icon={Settings} label="Settings" active={loc.pathname === "/settings"} collapsed={collapsed} activeColor={activeDayColor} />
       </nav>
 
