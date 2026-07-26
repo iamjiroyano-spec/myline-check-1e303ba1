@@ -320,6 +320,7 @@ function NavItem({
   active,
   collapsed,
   disabled,
+  activeColor,
 }: {
   to: string;
   icon: React.ComponentType<{ className?: string }>;
@@ -327,24 +328,26 @@ function NavItem({
   active?: boolean;
   collapsed: boolean;
   disabled?: boolean;
+  activeColor?: string;
 }) {
   const cls = `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
     active
-      ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
+      ? "bg-sidebar-accent shadow-sm"
       : disabled
         ? "text-sidebar-foreground/40 cursor-not-allowed"
         : "text-sidebar-foreground sidebar-hover"
   }`;
+  const style = active && activeColor ? { color: activeColor } : undefined;
   if (disabled) {
     return (
-      <div className={cls}>
+      <div className={cls} style={style}>
         <Icon className="h-4 w-4" />
         {!collapsed && <span>{label}</span>}
       </div>
     );
   }
   return (
-    <Link to={to} className={cls}>
+    <Link to={to} className={cls} style={style}>
       <Icon className="h-4 w-4" />
       {!collapsed && <span>{label}</span>}
     </Link>
