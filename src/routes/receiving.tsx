@@ -418,11 +418,13 @@ function ReceivingPage() {
                 )}
               </select>
             </Field>
-            <Field label="Comments" className="sm:col-span-2">
-              <input type="text" value={form.comments}
-                onChange={(e) => setForm({ ...form, comments: e.target.value })}
-                placeholder="e.g. Everything is OK" className={inputCls} />
-            </Field>
+            <div className="sm:col-span-2">
+              <Field label="Comments">
+                <input type="text" value={form.comments}
+                  onChange={(e) => setForm({ ...form, comments: e.target.value })}
+                  placeholder="e.g. Everything is OK" className={inputCls} />
+              </Field>
+            </div>
           </div>
 
           {/* Photos */}
