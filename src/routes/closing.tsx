@@ -115,6 +115,27 @@ function ClosingPage() {
   const shell = useShellState("Closing Report");
   const [records, setRecords] = useState<ClosingRecord[]>(() => loadRecords());
   const [template, setTemplate] = useState<string[]>(() => loadTemplate());
+  // Manager / team list managed in Settings → Manager tab
+  const [members, setMembers] = useState<string[]>(STAFF);
+  useEffect(() => {
+    const read = () => {
+      try {
+        const raw = lsStore.getItem("linecheck:settings:staff");
+        const parsed = raw ? JSON.parse(raw) : null;
+        setMembers(Array.isArray(parsed) && parsed.length ? parsed : STAFF);
+      } catch {
+        setMembers(STAFF);
+      }
+    };
+    read();
+    window.addEventListener("storage", read);
+    window.addEventListener("focus", read);
+    return () => {
+      window.removeEventListener("storage", read);
+      window.removeEventListener("focus", read);
+    };
+  }, []);
+
   const [form, setForm] = useState(() => {
     const { date, time } = nowParts();
     return {
@@ -343,14 +364,20 @@ function ClosingPage() {
               />
             </Field>
             <Field label="REPORTED BY">
-              <input
-                type="text"
-                value={form.closedBy}
+              <select
+                value={members.includes(form.closedBy) ? form.closedBy : ""}
                 onChange={(e) => setForm({ ...form, closedBy: e.target.value })}
-                placeholder="Auto-filled from team below"
                 className={inputCls}
-              />
+              >
+                <option value="">Select manager…</option>
+                {members.map((m) => (
+                  <option key={m} value={m} className="bg-popover text-popover-foreground">
+                    {m}
+                  </option>
+                ))}
+              </select>
             </Field>
+
           </div>
 
           {/* Closing team */}
@@ -371,7 +398,7 @@ function ClosingPage() {
               className={inputCls}
             >
               <option value="">Add team member…</option>
-              {STAFF.filter((s) => !form.crew.some((c) => c.member === s)).map((s) => (
+              {members.filter((s) => !form.crew.some((c) => c.member === s)).map((s) => (
                 <option key={s} value={s} className="bg-popover text-popover-foreground">
                   {s}
                 </option>
