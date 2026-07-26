@@ -3,7 +3,6 @@ import { useEffect, useMemo, useState } from "react";
 import { AppShell, useShellState } from "@/components/AppShell";
 import { lsStore } from "@/lib/lsStore";
 import { compressImageFile } from "@/lib/image";
-import { STAFF } from "@/lib/lineCheck";
 import { Camera, Trash2, X, PackageCheck, Plus, ChevronDown, ChevronUp, Pencil, Check as CheckIcon, Share2 } from "lucide-react";
 import { publishSharedReceiving } from "@/lib/shareReceiving";
 
@@ -131,6 +130,29 @@ function ReceivingPage() {
       photos: [] as string[],
     };
   });
+  // Team members managed in Settings → Team Members tab
+  const [teamMembers, setTeamMembers] = useState<string[]>([]);
+  useEffect(() => {
+    const read = () => {
+      try {
+        const raw = lsStore.getItem("linecheck:settings:members");
+        const parsed = raw ? JSON.parse(raw) : null;
+        setTeamMembers(Array.isArray(parsed) ? parsed : []);
+      } catch {
+        setTeamMembers([]);
+      }
+    };
+    read();
+    window.addEventListener("storage", read);
+    window.addEventListener("focus", read);
+    window.addEventListener("linecheck:members-update", read);
+    return () => {
+      window.removeEventListener("storage", read);
+      window.removeEventListener("focus", read);
+      window.removeEventListener("linecheck:members-update", read);
+    };
+  }, []);
+
   const [expanded, setExpanded] = useState<string | null>(null);
   const [viewer, setViewer] = useState<string | null>(null);
 
@@ -388,7 +410,12 @@ function ReceivingPage() {
                 onChange={(e) => setForm({ ...form, checkedBy: e.target.value })}
                 className={inputCls}>
                 <option value="">Select team member…</option>
-                {STAFF.map((s) => <option key={s} value={s}>{s}</option>)}
+                {teamMembers.map((s) => (
+                  <option key={s} value={s} className="bg-popover text-popover-foreground">{s}</option>
+                ))}
+                {form.checkedBy && !teamMembers.includes(form.checkedBy) && (
+                  <option value={form.checkedBy} className="bg-popover text-popover-foreground">{form.checkedBy}</option>
+                )}
               </select>
             </Field>
             <Field label="Signature">
