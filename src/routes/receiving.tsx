@@ -401,9 +401,17 @@ function ReceivingPage() {
           {/* Receiver / Comments */}
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <Field label="Receiver by (Name)">
-              <input type="text" value={form.receiverName}
+              <select value={form.receiverName}
                 onChange={(e) => setForm({ ...form, receiverName: e.target.value })}
-                placeholder="e.g. Abdulla, Hamiya, Alam, Rasal" className={inputCls} />
+                className={inputCls}>
+                <option value="">Select team member…</option>
+                {teamMembers.map((s) => (
+                  <option key={s} value={s} className="bg-popover text-popover-foreground">{s}</option>
+                ))}
+                {form.receiverName && !teamMembers.includes(form.receiverName) && (
+                  <option value={form.receiverName} className="bg-popover text-foreground">{form.receiverName}</option>
+                )}
+              </select>
             </Field>
             <Field label="Checked by (team member)">
               <select value={form.checkedBy}
