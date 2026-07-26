@@ -21,15 +21,31 @@ function snapshot(): Record<string, string> {
   return out;
 }
 
+let pendingWhileOffline = false;
+
+function isOffline() {
+  return typeof navigator !== "undefined" && navigator.onLine === false;
+}
+
 async function pushNow() {
   if (!session) return;
+  if (isOffline()) {
+    pendingWhileOffline = true;
+    return;
+  }
   try {
     await staffPushState({
       data: { name: session.name, pin: session.pin, patch: snapshot() },
     });
+    pendingWhileOffline = false;
   } catch (e) {
+    pendingWhileOffline = true;
     console.warn("[staff-sync] push failed", e);
   }
+}
+
+function onBackOnline() {
+  if (session && pendingWhileOffline) void pushNow();
 }
 
 function schedulePush() {
@@ -40,6 +56,7 @@ function schedulePush() {
     void pushNow();
   }, 900);
 }
+
 
 function flush() {
   if (timer) {
@@ -57,14 +74,18 @@ export async function startStaffSync(s: StaffSession) {
     window.addEventListener("linecheck:local-write", onWrite);
     window.addEventListener("pagehide", flush);
     window.addEventListener("beforeunload", flush);
+    window.addEventListener("online", onBackOnline);
     unsub = () => {
       window.removeEventListener("linecheck:local-write", onWrite);
       window.removeEventListener("pagehide", flush);
       window.removeEventListener("beforeunload", flush);
+      window.removeEventListener("online", onBackOnline);
     };
   }
+  if (isOffline()) return; // keep working from local data
   try {
     const res = await staffPullState({ data: { name: s.name, pin: s.pin } });
+
     const remote = res?.ok ? res.state : null;
     if (remote) {
       suppress = true;
