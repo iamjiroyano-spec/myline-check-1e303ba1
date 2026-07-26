@@ -175,6 +175,18 @@ function Sidebar({
     }
   }
 
+  const dayName = new Date(date + "T00:00:00").toLocaleDateString(undefined, { weekday: "long" });
+  const DAY_COLOR: Record<string, string> = {
+    Sunday: "#000000",
+    Monday: "#2563eb",
+    Tuesday: "#ca8a04",
+    Wednesday: "#dc2626",
+    Thursday: "#92400e",
+    Friday: "#16a34a",
+    Saturday: "#ea580c",
+  };
+  const activeDayColor = DAY_COLOR[dayName] ?? undefined;
+
   return (
     <aside
       className={`sidebar-shell fixed inset-y-0 left-0 z-40 flex h-screen w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-transform md:sticky md:top-0 md:z-20 md:translate-x-0 md:transition-all ${
@@ -204,10 +216,10 @@ function Sidebar({
       </div>
 
       <nav className="px-3">
-        <NavItem to="/" icon={LayoutDashboard} label="Dashboard" active={loc.pathname === "/"} collapsed={collapsed} />
-        <NavItem to="/history" icon={History} label="History" active={loc.pathname === "/history"} collapsed={collapsed} />
-        <NavItem to="/receiving" icon={PackageCheck} label="Receiving" active={loc.pathname === "/receiving"} collapsed={collapsed} />
-        <NavItem to="/settings" icon={Settings} label="Settings" active={loc.pathname === "/settings"} collapsed={collapsed} />
+        <NavItem to="/" icon={LayoutDashboard} label="Dashboard" active={loc.pathname === "/"} collapsed={collapsed} activeColor={activeDayColor} />
+        <NavItem to="/history" icon={History} label="History" active={loc.pathname === "/history"} collapsed={collapsed} activeColor={activeDayColor} />
+        <NavItem to="/receiving" icon={PackageCheck} label="Receiving" active={loc.pathname === "/receiving"} collapsed={collapsed} activeColor={activeDayColor} />
+        <NavItem to="/settings" icon={Settings} label="Settings" active={loc.pathname === "/settings"} collapsed={collapsed} activeColor={activeDayColor} />
       </nav>
 
       <div className="mt-4 flex-1 overflow-y-auto px-3 pb-6" data-tick={tick}>
@@ -224,14 +236,15 @@ function Sidebar({
             const active = activeSection === s.name || activeSection === stationSlug(s.name);
             return (
               <li key={s.name}>
-                <Link
+                  <Link
                   to="/$name"
                   params={{ name: stationSlug(s.name) }}
                   className={`group flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium transition-colors ${
                     active
-                      ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
+                      ? "bg-sidebar-accent shadow-sm"
                       : "text-sidebar-foreground/80 sidebar-hover"
                   }`}
+                  style={active ? { color: activeDayColor ?? "var(--sidebar-accent-foreground)" } : undefined}
                 >
                   <Icon className="h-4 w-4 shrink-0" />
                   {!collapsed && (
@@ -307,6 +320,7 @@ function NavItem({
   active,
   collapsed,
   disabled,
+  activeColor,
 }: {
   to: string;
   icon: React.ComponentType<{ className?: string }>;
@@ -314,24 +328,26 @@ function NavItem({
   active?: boolean;
   collapsed: boolean;
   disabled?: boolean;
+  activeColor?: string;
 }) {
   const cls = `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
     active
-      ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
+      ? "bg-sidebar-accent shadow-sm"
       : disabled
         ? "text-sidebar-foreground/40 cursor-not-allowed"
         : "text-sidebar-foreground sidebar-hover"
   }`;
+  const style = active && activeColor ? { color: activeColor } : undefined;
   if (disabled) {
     return (
-      <div className={cls}>
+      <div className={cls} style={style}>
         <Icon className="h-4 w-4" />
         {!collapsed && <span>{label}</span>}
       </div>
     );
   }
   return (
-    <Link to={to} className={cls}>
+    <Link to={to} className={cls} style={style}>
       <Icon className="h-4 w-4" />
       {!collapsed && <span>{label}</span>}
     </Link>
