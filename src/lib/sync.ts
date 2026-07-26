@@ -130,6 +130,7 @@ export async function startSync(userId: string) {
     window.addEventListener("linecheck:local-write", onLocalWrite);
     window.addEventListener("pagehide", flushPendingPush);
     window.addEventListener("beforeunload", flushPendingPush);
+    window.addEventListener("online", onBackOnline);
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "hidden") flushPendingPush();
     });
@@ -137,9 +138,11 @@ export async function startSync(userId: string) {
       window.removeEventListener("linecheck:local-write", onLocalWrite);
       window.removeEventListener("pagehide", flushPendingPush);
       window.removeEventListener("beforeunload", flushPendingPush);
+      window.removeEventListener("online", onBackOnline);
     };
   }
-  await pullFromServer();
+  if (!isOffline()) await pullFromServer();
+
 }
 
 
