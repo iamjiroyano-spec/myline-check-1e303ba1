@@ -236,14 +236,15 @@ function Sidebar({
             const active = activeSection === s.name || activeSection === stationSlug(s.name);
             return (
               <li key={s.name}>
-                <Link
+                  <Link
                   to="/$name"
                   params={{ name: stationSlug(s.name) }}
                   className={`group flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium transition-colors ${
                     active
-                      ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
+                      ? "bg-sidebar-accent shadow-sm"
                       : "text-sidebar-foreground/80 sidebar-hover"
                   }`}
+                  style={active ? { color: activeDayColor ?? "var(--sidebar-accent-foreground)" } : undefined}
                 >
                   <Icon className="h-4 w-4 shrink-0" />
                   {!collapsed && (
@@ -259,7 +260,7 @@ function Sidebar({
                             }}
                           />
                         </span>
-                        <span className="w-7 text-right text-[10px] tabular-nums text-muted-foreground">
+                        <span className="w-7 text-right text-[10px] tabular-ums text-muted-foreground">
                           {pct}%
                         </span>
                       </span>
