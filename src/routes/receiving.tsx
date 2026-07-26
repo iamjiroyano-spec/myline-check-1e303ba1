@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AppShell, useShellState } from "@/components/AppShell";
 import { lsStore } from "@/lib/lsStore";
 import { compressImageFile } from "@/lib/image";
-import { Camera, Trash2, X, PackageCheck, Plus, ChevronDown, ChevronUp, Pencil, Check as CheckIcon, Share2 } from "lucide-react";
+import { Camera, Trash2, X, PackageCheck, Plus, ChevronDown, ChevronUp, Pencil, Image as ImageIcon, Check as CheckIcon, Share2 } from "lucide-react";
 import { publishSharedReceiving } from "@/lib/shareReceiving";
 
 export const Route = createFileRoute("/receiving")({
