@@ -245,6 +245,21 @@ function AuthPage() {
             {mode === "signin" ? "Sign up" : "Sign in"}
           </button>
         </p>
+
+        <p className="mt-3 text-center text-xs text-muted-foreground">
+          <button
+            type="button"
+            className="inline-flex items-center gap-1.5 font-semibold text-foreground underline-offset-2 hover:underline"
+            onClick={() => {
+              setPinMode(true);
+              setMsg(null);
+            }}
+          >
+            <KeyRound className="h-3.5 w-3.5" />
+            Team member? Sign in with name & PIN
+          </button>
+        </p>
+
       </div>
     </div>
   );
