@@ -24,6 +24,29 @@ function AuthPage() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [pinMode, setPinMode] = useState(false);
+  const [pinName, setPinName] = useState("");
+  const [pin, setPin] = useState("");
+
+  const onPinSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    setMsg(null);
+    try {
+      const res = await staffLogin({ data: { name: pinName.trim(), pin } });
+      if (!res?.ok) {
+        setMsg("Wrong name or PIN.");
+        return;
+      }
+      setStaffSession({ id: res.id, name: res.name, ownerId: res.ownerId, pin });
+      window.location.href = "/receiving";
+    } catch (err: any) {
+      setMsg(err?.message || "Sign in failed");
+    } finally {
+      setBusy(false);
+    }
+  };
+
 
   useEffect(() => {
     try {
