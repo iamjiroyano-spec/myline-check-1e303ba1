@@ -2,7 +2,10 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
-import { ChefHat, Loader2 } from "lucide-react";
+import { staffLogin } from "@/lib/staffAuth.functions";
+import { setStaffSession } from "@/lib/staffSession";
+import { ChefHat, Loader2, KeyRound } from "lucide-react";
+
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
