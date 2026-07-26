@@ -421,12 +421,17 @@ function ClosingPage() {
               className={inputCls}
             >
               <option value="">Add team member…</option>
-              {members.filter((s) => !form.crew.some((c) => c.member === s)).map((s) => (
+              {teamMembers.filter((s) => !form.crew.some((c) => c.member === s)).map((s) => (
                 <option key={s} value={s} className="bg-popover text-popover-foreground">
                   {s}
                 </option>
               ))}
             </select>
+            {teamMembers.length === 0 && (
+              <p className="mt-2 text-xs text-muted-foreground">
+                No team members yet — add them in Settings → Team Members.
+              </p>
+            )}
 
             {form.crew.length === 0 ? (
               <p className="mt-2 text-xs text-muted-foreground">
