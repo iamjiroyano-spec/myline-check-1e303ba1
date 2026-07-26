@@ -225,6 +225,7 @@ function ReceivingPage() {
 
   function resetForm() {
     const { date, time } = nowParts();
+    setEditingId(null);
     setForm({
       date, time,
       branch: "",
@@ -244,14 +245,36 @@ function ReceivingPage() {
     });
   }
 
+  function editRecord(r: ReceivingRecord) {
+    setEditingId(r.id);
+    setForm({
+      date: r.date,
+      time: r.time,
+      branch: r.branch,
+      driver: r.driver,
+      deliveryNote: r.deliveryNote,
+      purchaseOrder: r.purchaseOrder,
+      chillerCarTemp: r.chillerCarTemp,
+      productTemp: r.productTemp,
+      tempChecks: { ...r.tempChecks },
+      quantityChecks: { ...r.quantityChecks },
+      qualityChecks: { ...r.qualityChecks },
+      receiverName: r.receiverName,
+      signature: r.signature ?? "",
+      comments: r.comments,
+      checkedBy: r.checkedBy,
+      photos: [...r.photos],
+    });
+    setExpanded(null);
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   function submit() {
     if (!form.receiverName.trim() && !form.checkedBy.trim()) {
       alert("Please enter the Receiver name (or select who checked).");
       return;
     }
-    const rec: ReceivingRecord = {
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-      createdAt: new Date().toISOString(),
+    const values = {
       date: form.date,
       time: form.time,
       branch: form.branch.trim(),
@@ -269,11 +292,24 @@ function ReceivingPage() {
       checkedBy: (form.checkedBy || form.receiverName).trim(),
       photos: form.photos,
     };
+    if (editingId) {
+      const next = records.map((r) => (r.id === editingId ? { ...r, ...values } : r));
+      setRecords(next);
+      saveRecords(next);
+      resetForm();
+      return;
+    }
+    const rec: ReceivingRecord = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      createdAt: new Date().toISOString(),
+      ...values,
+    };
     const next = [rec, ...records];
     setRecords(next);
     saveRecords(next);
     resetForm();
   }
+
 
   function deleteRecord(id: string) {
     if (!confirm("Delete this receiving record?")) return;
