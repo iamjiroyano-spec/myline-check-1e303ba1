@@ -129,6 +129,25 @@ function SharedClosingView() {
             </Chip>
           </div>
 
+          {c.crew.length > 0 && (
+            <div className="mt-5">
+              <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                Closing team
+              </p>
+              <ul className="space-y-1 text-sm">
+                {c.crew.map((m) => (
+                  <li key={m.member}>
+                    <span className="font-semibold">{m.member}</span>
+                    {": "}
+                    <span className="text-muted-foreground">
+                      {m.stations.length ? m.stations.join(", ") : "No station listed"}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           <div className="mt-5">
             <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
               Closing checklist
