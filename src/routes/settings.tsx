@@ -757,9 +757,20 @@ function TeamPanel() {
   const add = () => {
     const n = name.trim();
     if (!n) return;
+    if (members.some((m) => m.toLowerCase() === n.toLowerCase())) {
+      alert("That team member already exists.");
+      return;
+    }
     setMembers((m) => [n, ...m]);
     setName("");
   };
+
+  const remove = (index: number) => {
+    const target = members[index];
+    if (!confirm(`Remove "${target}" from the team?`)) return;
+    setMembers((arr) => arr.filter((_, j) => j !== index));
+  };
+
 
   return (
     <div>
@@ -788,7 +799,7 @@ function TeamPanel() {
             <Users className="h-4 w-4 text-muted-foreground" />
             <span className="font-semibold tracking-tight">{m}</span>
             <button
-              onClick={() => setMembers((arr) => arr.filter((_, j) => j !== i))}
+              onClick={() => remove(i)}
               className="ml-auto grid h-7 w-7 place-items-center rounded-md text-muted-foreground hover:bg-danger-soft hover:text-danger"
               aria-label="Delete"
             >
