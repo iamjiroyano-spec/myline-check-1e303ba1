@@ -21,15 +21,31 @@ function snapshot(): Record<string, string> {
   return out;
 }
 
+let pendingWhileOffline = false;
+
+function isOffline() {
+  return typeof navigator !== "undefined" && navigator.onLine === false;
+}
+
 async function pushNow() {
   if (!session) return;
+  if (isOffline()) {
+    pendingWhileOffline = true;
+    return;
+  }
   try {
     await staffPushState({
       data: { name: session.name, pin: session.pin, patch: snapshot() },
     });
+    pendingWhileOffline = false;
   } catch (e) {
+    pendingWhileOffline = true;
     console.warn("[staff-sync] push failed", e);
   }
+}
+
+function onBackOnline() {
+  if (session && pendingWhileOffline) void pushNow();
 }
 
 function schedulePush() {
@@ -40,6 +56,7 @@ function schedulePush() {
     void pushNow();
   }, 900);
 }
+
 
 function flush() {
   if (timer) {
