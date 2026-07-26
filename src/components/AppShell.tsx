@@ -199,16 +199,7 @@ function Sidebar({
   }
 
   const dayName = new Date(date + "T00:00:00").toLocaleDateString(undefined, { weekday: "long" });
-  const DAY_COLOR: Record<string, string> = {
-    Sunday: "#000000",
-    Monday: "#2563eb",
-    Tuesday: "#ca8a04",
-    Wednesday: "#dc2626",
-    Thursday: "#92400e",
-    Friday: "#16a34a",
-    Saturday: "#ea580c",
-  };
-  const activeDayColor = DAY_COLOR[dayName] ?? undefined;
+  const activeDayColor = DAY_COLOR_SIDEBAR[dayName] ?? undefined;
 
   return (
     <aside
