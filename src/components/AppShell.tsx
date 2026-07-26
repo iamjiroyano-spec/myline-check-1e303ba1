@@ -260,7 +260,7 @@ function Sidebar({
                             }}
                           />
                         </span>
-                        <span className="w-7 text-right text-[10px] tabular-ums text-muted-foreground">
+                        <span className="w-7 text-right text-[10px] tabular-nums text-muted-foreground">
                           {pct}%
                         </span>
                       </span>
