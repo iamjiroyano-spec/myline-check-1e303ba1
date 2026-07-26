@@ -342,7 +342,7 @@ function ClosingPage() {
                 className={inputCls}
               />
             </Field>
-            <Field label="Closed by (optional note)">
+            <Field label="REPORTED BY">
               <input
                 type="text"
                 value={form.closedBy}
