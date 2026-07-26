@@ -50,6 +50,7 @@
   --color-sage-deep: var(--sage-deep);
   --color-info: var(--info);
   --color-info-soft: var(--info-soft);
+  --color-day-pill-bg: var(--day-pill-bg);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-border: var(--border);
