@@ -178,6 +178,9 @@
   --sage-foreground: oklch(0.18 0.03 40);
   --sage-deep: oklch(0.5 0.07 140);
 
+  --info: oklch(0.75 0.12 245);
+  --info-soft: oklch(0.3 0.05 245);
+
   --destructive: oklch(0.7 0.19 22);
   --destructive-foreground: oklch(0.96 0.015 75);
 
