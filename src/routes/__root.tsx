@@ -123,8 +123,13 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
+  useEffect(() => {
+    registerOfflineSupport();
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
+      <OfflineBanner />
       <AuthGate>
         {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
         <Outlet />
@@ -132,3 +137,4 @@ function RootComponent() {
     </QueryClientProvider>
   );
 }
+
