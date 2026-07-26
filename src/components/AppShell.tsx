@@ -216,10 +216,10 @@ function Sidebar({
       </div>
 
       <nav className="px-3">
-        <NavItem to="/" icon={LayoutDashboard} label="Dashboard" active={loc.pathname === "/"} collapsed={collapsed} />
-        <NavItem to="/history" icon={History} label="History" active={loc.pathname === "/history"} collapsed={collapsed} />
-        <NavItem to="/receiving" icon={PackageCheck} label="Receiving" active={loc.pathname === "/receiving"} collapsed={collapsed} />
-        <NavItem to="/settings" icon={Settings} label="Settings" active={loc.pathname === "/settings"} collapsed={collapsed} />
+        <NavItem to="/" icon={LayoutDashboard} label="Dashboard" active={loc.pathname === "/"} collapsed={collapsed} activeColor={activeDayColor} />
+        <NavItem to="/history" icon={History} label="History" active={loc.pathname === "/history"} collapsed={collapsed} activeColor={activeDayColor} />
+        <NavItem to="/receiving" icon={PackageCheck} label="Receiving" active={loc.pathname === "/receiving"} collapsed={collapsed} activeColor={activeDayColor} />
+        <NavItem to="/settings" icon={Settings} label="Settings" active={loc.pathname === "/settings"} collapsed={collapsed} activeColor={activeDayColor} />
       </nav>
 
       <div className="mt-4 flex-1 overflow-y-auto px-3 pb-6" data-tick={tick}>
