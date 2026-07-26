@@ -1612,28 +1612,23 @@ function SortableCategory({
       </div>
 
       <div className="mt-3 space-y-2">
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleItemDragEnd}
-        >
-          <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
-            {cat.items.map((it, ii) => (
-              <SortableItem
-                key={ii}
-                ci={ci}
-                ii={ii}
-                it={it}
-                updateItem={updateItem}
-                removeItem={removeItem}
-                moveItemToCategory={moveItemToCategory}
-                categories={draft.map((c) => c.group)}
-                SHELF_OPTIONS={SHELF_OPTIONS}
-                CONTAINER_OPTIONS={CONTAINER_OPTIONS}
-              />
-            ))}
-          </SortableContext>
-        </DndContext>
+        <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
+          {cat.items.map((it, ii) => (
+            <SortableItem
+              key={ii}
+              ci={ci}
+              ii={ii}
+              it={it}
+              updateItem={updateItem}
+              removeItem={removeItem}
+              moveItemToCategory={moveItemToCategory}
+              categories={draft.map((c) => c.group)}
+              SHELF_OPTIONS={SHELF_OPTIONS}
+              CONTAINER_OPTIONS={CONTAINER_OPTIONS}
+            />
+          ))}
+        </SortableContext>
+
         <button
           onClick={() => addItem(ci)}
           className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-border bg-card/60 px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-accent hover:text-foreground"
