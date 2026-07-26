@@ -33,11 +33,28 @@ export type SharedClosingPayload = z.infer<typeof sharedClosingPayloadSchema>;
 export async function publishSharedClosing(
   record: Record<string, unknown> & { id: string },
 ): Promise<string> {
+  const brand_name = lsStore.getItem("linecheck:settings:brand:name") || "LUMA";
+  const payload = { ...record, brand_name };
+
+  const staff = getStaffSession();
+  if (staff) {
+    const { id } = await staffPublishShare({
+      data: {
+        name: staff.name,
+        pin: staff.pin,
+        kind: "closing",
+        record_id: record.id,
+        brand_name,
+        payload: JSON.parse(JSON.stringify(payload)),
+      },
+    });
+    return `${window.location.origin}/c/${id}`;
+  }
+
   const { data: userData, error: userErr } = await supabase.auth.getUser();
   if (userErr || !userData.user) throw new Error("Sign in required to share");
   const owner_id = userData.user.id;
-  const brand_name = lsStore.getItem("linecheck:settings:brand:name") || "LUMA";
-  const payload = { ...record, brand_name };
+
 
   const { data, error } = await supabase
     .from("shared_closings")
