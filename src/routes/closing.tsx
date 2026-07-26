@@ -364,14 +364,20 @@ function ClosingPage() {
               />
             </Field>
             <Field label="REPORTED BY">
-              <input
-                type="text"
-                value={form.closedBy}
+              <select
+                value={members.includes(form.closedBy) ? form.closedBy : ""}
                 onChange={(e) => setForm({ ...form, closedBy: e.target.value })}
-                placeholder="Auto-filled from team below"
                 className={inputCls}
-              />
+              >
+                <option value="">Select manager…</option>
+                {members.map((m) => (
+                  <option key={m} value={m} className="bg-popover text-popover-foreground">
+                    {m}
+                  </option>
+                ))}
+              </select>
             </Field>
+
           </div>
 
           {/* Closing team */}
