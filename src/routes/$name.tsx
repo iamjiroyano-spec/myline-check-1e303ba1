@@ -1505,11 +1505,27 @@ function EditDraftDnd(props: EditDraftDndProps) {
   const handleCatDragEnd = (e: DragEndEvent) => {
     const { active, over } = e;
     if (!over || active.id === over.id) return;
-    const from = catIds.indexOf(String(active.id));
-    const to = catIds.indexOf(String(over.id));
+    const activeId = String(active.id);
+    const overId = String(over.id);
+
+    // Item reorder (within the same category)
+    if (activeId.startsWith("item-") && overId.startsWith("item-")) {
+      const [, aCi, aIi] = activeId.split("-").map(Number);
+      const [, oCi, oIi] = overId.split("-").map(Number);
+      if (aCi !== oCi) return;
+      setDraft((d) =>
+        d.map((c, idx) => (idx === aCi ? { ...c, items: arrayMove(c.items, aIi, oIi) } : c)),
+      );
+      return;
+    }
+
+    if (!activeId.startsWith("cat-") || !overId.startsWith("cat-")) return;
+    const from = catIds.indexOf(activeId);
+    const to = catIds.indexOf(overId);
     if (from < 0 || to < 0) return;
     setDraft((d) => arrayMove(d, from, to));
   };
+
 
   return (
     <div className="space-y-5">
