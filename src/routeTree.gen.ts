@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ReceivingRouteImport } from './routes/receiving'
 import { Route as HistoryRouteImport } from './routes/history'
+import { Route as ClosingRouteImport } from './routes/closing'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as NameRouteImport } from './routes/$name'
 import { Route as IndexRouteImport } from './routes/index'
@@ -32,6 +33,11 @@ const ReceivingRoute = ReceivingRouteImport.update({
 const HistoryRoute = HistoryRouteImport.update({
   id: '/history',
   path: '/history',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ClosingRoute = ClosingRouteImport.update({
+  id: '/closing',
+  path: '/closing',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -69,6 +75,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$name': typeof NameRoute
   '/auth': typeof AuthRoute
+  '/closing': typeof ClosingRoute
   '/history': typeof HistoryRouteWithChildren
   '/receiving': typeof ReceivingRoute
   '/settings': typeof SettingsRoute
@@ -80,6 +87,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$name': typeof NameRoute
   '/auth': typeof AuthRoute
+  '/closing': typeof ClosingRoute
   '/history': typeof HistoryRouteWithChildren
   '/receiving': typeof ReceivingRoute
   '/settings': typeof SettingsRoute
@@ -92,6 +100,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/$name': typeof NameRoute
   '/auth': typeof AuthRoute
+  '/closing': typeof ClosingRoute
   '/history': typeof HistoryRouteWithChildren
   '/receiving': typeof ReceivingRoute
   '/settings': typeof SettingsRoute
@@ -105,6 +114,7 @@ export interface FileRouteTypes {
     | '/'
     | '/$name'
     | '/auth'
+    | '/closing'
     | '/history'
     | '/receiving'
     | '/settings'
@@ -116,6 +126,7 @@ export interface FileRouteTypes {
     | '/'
     | '/$name'
     | '/auth'
+    | '/closing'
     | '/history'
     | '/receiving'
     | '/settings'
@@ -127,6 +138,7 @@ export interface FileRouteTypes {
     | '/'
     | '/$name'
     | '/auth'
+    | '/closing'
     | '/history'
     | '/receiving'
     | '/settings'
@@ -139,6 +151,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   NameRoute: typeof NameRoute
   AuthRoute: typeof AuthRoute
+  ClosingRoute: typeof ClosingRoute
   HistoryRoute: typeof HistoryRouteWithChildren
   ReceivingRoute: typeof ReceivingRoute
   SettingsRoute: typeof SettingsRoute
@@ -167,6 +180,13 @@ declare module '@tanstack/react-router' {
       path: '/history'
       fullPath: '/history'
       preLoaderRoute: typeof HistoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/closing': {
+      id: '/closing'
+      path: '/closing'
+      fullPath: '/closing'
+      preLoaderRoute: typeof ClosingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -229,6 +249,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   NameRoute: NameRoute,
   AuthRoute: AuthRoute,
+  ClosingRoute: ClosingRoute,
   HistoryRoute: HistoryRouteWithChildren,
   ReceivingRoute: ReceivingRoute,
   SettingsRoute: SettingsRoute,
