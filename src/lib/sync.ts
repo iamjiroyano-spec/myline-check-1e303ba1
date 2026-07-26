@@ -20,17 +20,31 @@ function collectSnapshot(): Record<string, string> {
   return out;
 }
 
+let pendingWhileOffline = false;
+
+function isOffline() {
+  return typeof navigator !== "undefined" && navigator.onLine === false;
+}
+
 async function pushNow() {
   if (!currentUserId) return;
+  if (isOffline()) {
+    // Keep the change locally; it is pushed as soon as we're back online.
+    pendingWhileOffline = true;
+    return;
+  }
   const data = collectSnapshot();
   try {
-    await supabase
+    const { error } = await supabase
       .from("user_state")
       .upsert(
         { user_id: currentUserId, data, updated_at: new Date().toISOString() },
         { onConflict: "user_id" },
       );
+    if (error) throw error;
+    pendingWhileOffline = false;
   } catch (e) {
+    pendingWhileOffline = true;
     console.warn("[sync] push failed", e);
   }
 }
@@ -43,6 +57,13 @@ function schedulePush() {
     void pushNow();
   }, 800);
 }
+
+function onBackOnline() {
+  if (!currentUserId) return;
+  if (pendingWhileOffline) void pushNow();
+  else void pullFromServer();
+}
+
 
 function onLocalWrite() {
   schedulePush();
