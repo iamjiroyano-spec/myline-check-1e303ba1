@@ -136,6 +136,29 @@ function ClosingPage() {
     };
   }, []);
 
+  // Team members managed in Settings → Team Members tab
+  const [teamMembers, setTeamMembers] = useState<string[]>([]);
+  useEffect(() => {
+    const read = () => {
+      try {
+        const raw = lsStore.getItem("linecheck:settings:members");
+        const parsed = raw ? JSON.parse(raw) : null;
+        setTeamMembers(Array.isArray(parsed) ? parsed : []);
+      } catch {
+        setTeamMembers([]);
+      }
+    };
+    read();
+    window.addEventListener("storage", read);
+    window.addEventListener("focus", read);
+    window.addEventListener("linecheck:members-update", read);
+    return () => {
+      window.removeEventListener("storage", read);
+      window.removeEventListener("focus", read);
+      window.removeEventListener("linecheck:members-update", read);
+    };
+  }, []);
+
   const [form, setForm] = useState(() => {
     const { date, time } = nowParts();
     return {
