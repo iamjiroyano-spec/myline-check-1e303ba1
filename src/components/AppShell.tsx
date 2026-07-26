@@ -58,6 +58,29 @@ const SECTION_ICONS: Record<string, React.ComponentType<{ className?: string }>>
   "PREP FREEZER": Snowflake,
 };
 
+// Weekday accent colors. The "top" variants are used on light top-bar
+// backgrounds; the "sidebar" variants are darker so they remain readable on
+// the fixed light-orange sidebar active background.
+const DAY_COLOR: Record<string, string> = {
+  Sunday: "#000000",
+  Monday: "#2563eb",
+  Tuesday: "#a16207",
+  Wednesday: "#dc2626",
+  Thursday: "#92400e",
+  Friday: "#15803d",
+  Saturday: "#c2410c",
+};
+
+const DAY_COLOR_SIDEBAR: Record<string, string> = {
+  Sunday: "#000000",
+  Monday: "#1e3a8a",
+  Tuesday: "#5c4b1e",
+  Wednesday: "#7f1d1d",
+  Thursday: "#451a03",
+  Friday: "#14532d",
+  Saturday: "#7c2d12",
+};
+
 function useShifts() {
   const [shifts, setShifts] = useState(() => getShifts());
   useEffect(() => {
@@ -176,16 +199,7 @@ function Sidebar({
   }
 
   const dayName = new Date(date + "T00:00:00").toLocaleDateString(undefined, { weekday: "long" });
-  const DAY_COLOR: Record<string, string> = {
-    Sunday: "#000000",
-    Monday: "#2563eb",
-    Tuesday: "#ca8a04",
-    Wednesday: "#dc2626",
-    Thursday: "#92400e",
-    Friday: "#16a34a",
-    Saturday: "#ea580c",
-  };
-  const activeDayColor = DAY_COLOR[dayName] ?? undefined;
+  const activeDayColor = DAY_COLOR_SIDEBAR[dayName] ?? undefined;
 
   return (
     <aside
@@ -369,15 +383,6 @@ function TopBar({
   const dayName = new Date(date + "T00:00:00").toLocaleDateString(undefined, {
     weekday: "long",
   });
-  const DAY_COLOR: Record<string, string> = {
-    Sunday: "#000000",
-    Monday: "#2563eb",
-    Tuesday: "#ca8a04",
-    Wednesday: "#dc2626",
-    Thursday: "#92400e",
-    Friday: "#16a34a",
-    Saturday: "#ea580c",
-  };
   const shortDate = new Date(date + "T00:00:00").toLocaleDateString(undefined, {
     day: "2-digit",
     month: "short",
@@ -404,7 +409,7 @@ function TopBar({
             aria-label="Date"
           />
           <span
-            className="rounded-full bg-info-soft px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider"
+            className="rounded-full bg-day-pill-bg px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider"
             style={{ color: DAY_COLOR[dayName] ?? "inherit" }}
           >
             {dayName}
