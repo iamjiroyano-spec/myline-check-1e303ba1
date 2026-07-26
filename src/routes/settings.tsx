@@ -137,7 +137,7 @@ function SettingsPage() {
             Stations & Items
           </TabPill>
           <TabPill active={tab === "team"} onClick={() => setTab("team")} icon={<Users className="h-4 w-4" />}>
-            Team Members
+            Manager
           </TabPill>
           <TabPill active={tab === "statuses"} onClick={() => setTab("statuses")} icon={<Tag className="h-4 w-4" />}>
             Status Options
