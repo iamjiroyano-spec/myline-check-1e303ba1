@@ -154,7 +154,9 @@ function ReceivingPage() {
   }, []);
 
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [viewer, setViewer] = useState<string | null>(null);
+
 
   useEffect(() => {
     const refresh = () => { setRecords(loadRecords()); setTemplate(loadTemplate()); };
