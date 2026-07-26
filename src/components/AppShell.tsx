@@ -175,6 +175,18 @@ function Sidebar({
     }
   }
 
+  const dayName = new Date(date + "T00:00:00").toLocaleDateString(undefined, { weekday: "long" });
+  const DAY_COLOR: Record<string, string> = {
+    Sunday: "#000000",
+    Monday: "#2563eb",
+    Tuesday: "#ca8a04",
+    Wednesday: "#dc2626",
+    Thursday: "#92400e",
+    Friday: "#16a34a",
+    Saturday: "#ea580c",
+  };
+  const activeDayColor = DAY_COLOR[dayName] ?? undefined;
+
   return (
     <aside
       className={`sidebar-shell fixed inset-y-0 left-0 z-40 flex h-screen w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-transform md:sticky md:top-0 md:z-20 md:translate-x-0 md:transition-all ${
