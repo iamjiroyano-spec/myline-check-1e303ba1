@@ -409,7 +409,7 @@ function TopBar({
             aria-label="Date"
           />
           <span
-            className="rounded-full bg-white px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider"
+            className="rounded-full bg-day-pill-bg px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider"
             style={{ color: DAY_COLOR[dayName] ?? "inherit" }}
           >
             {dayName}
