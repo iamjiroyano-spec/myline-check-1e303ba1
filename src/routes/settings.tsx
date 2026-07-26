@@ -54,7 +54,7 @@ export const Route = createFileRoute("/settings")({
   component: SettingsPage,
 });
 
-type Tab = "branding" | "stations" | "team" | "statuses" | "shifts" | "shelves" | "containers" | "access" | "admins";
+type Tab = "branding" | "stations" | "team" | "members" | "statuses" | "shifts" | "shelves" | "containers" | "access" | "admins";
 
 const ICON_OPTIONS = Object.keys(SECTION_ICONS);
 
@@ -66,6 +66,7 @@ type LocalStation = {
 
 const STATIONS_KEY = "linecheck:settings:stations";
 const STAFF_KEY = "linecheck:settings:staff";
+const MEMBERS_KEY = "linecheck:settings:members";
 const STATUSES_KEY = "linecheck:settings:statuses";
 const SHELVES_KEY = "linecheck:settings:shelves";
 const CONTAINERS_KEY = "linecheck:settings:containers";
@@ -139,6 +140,9 @@ function SettingsPage() {
           <TabPill active={tab === "team"} onClick={() => setTab("team")} icon={<Users className="h-4 w-4" />}>
             Manager
           </TabPill>
+          <TabPill active={tab === "members"} onClick={() => setTab("members")} icon={<Users className="h-4 w-4" />}>
+            Team Members
+          </TabPill>
           <TabPill active={tab === "statuses"} onClick={() => setTab("statuses")} icon={<Tag className="h-4 w-4" />}>
             Status Options
           </TabPill>
@@ -166,6 +170,7 @@ function SettingsPage() {
         {tab === "branding" && <BrandingPanel />}
         {tab === "stations" && <StationsPanel />}
         {tab === "team" && <TeamPanel />}
+        {tab === "members" && <MembersPanel />}
         {tab === "statuses" && <StatusPanel />}
         {tab === "shifts" && <ShiftsPanel />}
         {tab === "shelves" && (
@@ -746,17 +751,53 @@ function IconPicker({ value, onChange }: { value: string; onChange: (v: string) 
 /* ============= TEAM ============= */
 
 function TeamPanel() {
-  const [members, setMembers] = useState<string[]>(() => loadJSON(STAFF_KEY, STAFF));
+  return (
+    <PeoplePanel
+      storageKey={STAFF_KEY}
+      updateEvent="linecheck:staff-update"
+      defaults={STAFF}
+      placeholder="New manager..."
+    />
+  );
+}
+
+function MembersPanel() {
+  return (
+    <PeoplePanel
+      storageKey={MEMBERS_KEY}
+      updateEvent="linecheck:members-update"
+      defaults={[]}
+      placeholder="New team member..."
+    />
+  );
+}
+
+function PeoplePanel({
+  storageKey,
+  updateEvent,
+  defaults,
+  placeholder,
+}: {
+  storageKey: string;
+  updateEvent: string;
+  defaults: string[];
+  placeholder: string;
+}) {
+  const [members, setMembers] = useState<string[]>(() => loadJSON(storageKey, defaults));
   const [name, setName] = useState("");
 
   useEffect(() => {
-    lsStore.setItem(STAFF_KEY, JSON.stringify(members));
-    window.dispatchEvent(new Event("linecheck:staff-update"));
-  }, [members]);
+    lsStore.setItem(storageKey, JSON.stringify(members));
+    window.dispatchEvent(new Event(updateEvent));
+  }, [members, storageKey, updateEvent]);
 
   const add = () => {
     const n = name.trim();
     if (!n) return;
+    if (members.some((m) => m.toLowerCase() === n.toLowerCase())) {
+      setName("");
+      return;
+    }
     setMembers((m) => [n, ...m]);
     setName("");
   };
@@ -768,9 +809,10 @@ function TeamPanel() {
           value={name}
           onChange={(e) => setName(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && add()}
-          placeholder="New team member..."
+          placeholder={placeholder}
           className="flex-1 rounded-full border border-border bg-card px-5 py-3 text-sm outline-none focus:border-foreground/30"
         />
+
         <button
           onClick={add}
           className="flex items-center gap-1.5 rounded-full bg-muted-foreground/80 px-5 py-3 text-sm font-semibold text-background hover:bg-foreground"
