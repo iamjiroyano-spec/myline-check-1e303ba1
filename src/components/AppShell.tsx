@@ -311,6 +311,13 @@ function SignOutButton({ collapsed }: { collapsed: boolean }) {
   const [email, setEmail] = useState<string | null>(null);
   useEffect(() => {
     let active = true;
+    const staff = getStaffSession();
+    if (staff) {
+      setEmail(`${staff.name} (PIN access)`);
+      return () => {
+        active = false;
+      };
+    }
     import("@/integrations/supabase/client").then(({ supabase }) => {
       supabase.auth.getUser().then(({ data }) => {
         if (active) setEmail(data.user?.email ?? null);
@@ -321,10 +328,12 @@ function SignOutButton({ collapsed }: { collapsed: boolean }) {
     };
   }, []);
   const handle = async () => {
+    clearStaffSession();
     const { supabase } = await import("@/integrations/supabase/client");
     await supabase.auth.signOut();
     window.location.href = "/auth";
   };
+
   return (
     <div className="border-t border-sidebar-border px-3 py-3">
       {!collapsed && email && (
