@@ -131,6 +131,33 @@ export type Database = {
         }
         Relationships: []
       }
+      staff_logins: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          owner_id: string
+          pin_hash: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          owner_id: string
+          pin_hash: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          owner_id?: string
+          pin_hash?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_state: {
         Row: {
           data: Json
