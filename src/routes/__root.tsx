@@ -12,6 +12,9 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AuthGate } from "../components/AuthGate";
+import { OfflineBanner } from "../components/OfflineBanner";
+import { registerOfflineSupport } from "../lib/offline";
+
 
 function NotFoundComponent() {
   return (
