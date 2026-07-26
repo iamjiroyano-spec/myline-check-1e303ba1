@@ -353,6 +353,15 @@ function TopBar({
   const dayName = new Date(date + "T00:00:00").toLocaleDateString(undefined, {
     weekday: "long",
   });
+  const DAY_COLOR: Record<string, string> = {
+    Sunday: "#000000",
+    Monday: "#2563eb",
+    Tuesday: "#ca8a04",
+    Wednesday: "#dc2626",
+    Thursday: "#92400e",
+    Friday: "#16a34a",
+    Saturday: "#ea580c",
+  };
   const shortDate = new Date(date + "T00:00:00").toLocaleDateString(undefined, {
     day: "2-digit",
     month: "short",
@@ -378,7 +387,10 @@ function TopBar({
             className="bg-transparent text-xs font-semibold uppercase tracking-wide outline-none"
             aria-label="Date"
           />
-          <span className="rounded-full bg-info-soft px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-info">
+          <span
+            className="rounded-full bg-info-soft px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider"
+            style={{ color: DAY_COLOR[dayName] ?? "inherit" }}
+          >
             {dayName}
           </span>
           <span className="sr-only">{shortDate}</span>
