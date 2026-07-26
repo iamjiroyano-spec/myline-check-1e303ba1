@@ -10,7 +10,9 @@ import {
   ChevronDown,
   ChevronUp,
   ClipboardCheck,
+  Image as ImageIcon,
   Pencil,
+
   Plus,
   Share2,
   Trash2,
