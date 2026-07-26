@@ -1505,11 +1505,27 @@ function EditDraftDnd(props: EditDraftDndProps) {
   const handleCatDragEnd = (e: DragEndEvent) => {
     const { active, over } = e;
     if (!over || active.id === over.id) return;
-    const from = catIds.indexOf(String(active.id));
-    const to = catIds.indexOf(String(over.id));
+    const activeId = String(active.id);
+    const overId = String(over.id);
+
+    // Item reorder (within the same category)
+    if (activeId.startsWith("item-") && overId.startsWith("item-")) {
+      const [, aCi, aIi] = activeId.split("-").map(Number);
+      const [, oCi, oIi] = overId.split("-").map(Number);
+      if (aCi !== oCi) return;
+      setDraft((d) =>
+        d.map((c, idx) => (idx === aCi ? { ...c, items: arrayMove(c.items, aIi, oIi) } : c)),
+      );
+      return;
+    }
+
+    if (!activeId.startsWith("cat-") || !overId.startsWith("cat-")) return;
+    const from = catIds.indexOf(activeId);
+    const to = catIds.indexOf(overId);
     if (from < 0 || to < 0) return;
     setDraft((d) => arrayMove(d, from, to));
   };
+
 
   return (
     <div className="space-y-5">
@@ -1547,22 +1563,8 @@ function SortableCategory({
     opacity: isDragging ? 0.6 : 1,
   };
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
-  );
   const itemIds = cat.items.map((_, i) => `item-${ci}-${i}`);
 
-  const handleItemDragEnd = (e: DragEndEvent) => {
-    const { active, over } = e;
-    if (!over || active.id === over.id) return;
-    const from = itemIds.indexOf(String(active.id));
-    const to = itemIds.indexOf(String(over.id));
-    if (from < 0 || to < 0) return;
-    setDraft((d) =>
-      d.map((c, idx) => (idx === ci ? { ...c, items: arrayMove(c.items, from, to) } : c)),
-    );
-  };
 
   return (
     <div ref={setNodeRef} style={style} className="rounded-xl border border-border bg-background/40 p-3">
@@ -1610,28 +1612,23 @@ function SortableCategory({
       </div>
 
       <div className="mt-3 space-y-2">
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleItemDragEnd}
-        >
-          <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
-            {cat.items.map((it, ii) => (
-              <SortableItem
-                key={ii}
-                ci={ci}
-                ii={ii}
-                it={it}
-                updateItem={updateItem}
-                removeItem={removeItem}
-                moveItemToCategory={moveItemToCategory}
-                categories={draft.map((c) => c.group)}
-                SHELF_OPTIONS={SHELF_OPTIONS}
-                CONTAINER_OPTIONS={CONTAINER_OPTIONS}
-              />
-            ))}
-          </SortableContext>
-        </DndContext>
+        <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
+          {cat.items.map((it, ii) => (
+            <SortableItem
+              key={ii}
+              ci={ci}
+              ii={ii}
+              it={it}
+              updateItem={updateItem}
+              removeItem={removeItem}
+              moveItemToCategory={moveItemToCategory}
+              categories={draft.map((c) => c.group)}
+              SHELF_OPTIONS={SHELF_OPTIONS}
+              CONTAINER_OPTIONS={CONTAINER_OPTIONS}
+            />
+          ))}
+        </SortableContext>
+
         <button
           onClick={() => addItem(ci)}
           className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-border bg-card/60 px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-accent hover:text-foreground"
