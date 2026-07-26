@@ -398,7 +398,7 @@ function ReceivingPage() {
           />
 
 
-          {/* Receiver / Signature / Comments */}
+          {/* Receiver / Comments */}
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <Field label="Receiver by (Name)">
               <input type="text" value={form.receiverName}
@@ -418,12 +418,7 @@ function ReceivingPage() {
                 )}
               </select>
             </Field>
-            <Field label="Signature">
-              <input type="text" value={form.signature}
-                onChange={(e) => setForm({ ...form, signature: e.target.value })}
-                placeholder="Typed signature" className={inputCls} />
-            </Field>
-            <Field label="Comments">
+            <Field label="Comments" className="sm:col-span-2">
               <input type="text" value={form.comments}
                 onChange={(e) => setForm({ ...form, comments: e.target.value })}
                 placeholder="e.g. Everything is OK" className={inputCls} />
