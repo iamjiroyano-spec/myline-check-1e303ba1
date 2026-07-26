@@ -475,16 +475,28 @@ function ReceivingPage() {
 
           {/* Photos */}
           <div className="mt-4">
-            <div className="mb-2 flex items-center justify-between">
+            <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
               <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Photos
               </span>
-              <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-input bg-background px-3 py-1.5 text-sm font-medium hover:bg-accent">
-                <Camera className="h-4 w-4" />
-                Add photo
-                <input type="file" accept="image/*" capture="environment" className="hidden"
-                  onChange={(e) => { addPhoto(e.target.files?.[0]); e.target.value = ""; }} />
-              </label>
+              <div className="flex flex-wrap items-center gap-2">
+                <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-input bg-background px-3 py-1.5 text-sm font-medium hover:bg-accent">
+                  <Camera className="h-4 w-4" />
+                  Camera
+                  <input type="file" accept="image/*" capture="environment" className="hidden"
+                    onChange={(e) => { addPhoto(e.target.files?.[0]); e.target.value = ""; }} />
+                </label>
+                <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-input bg-background px-3 py-1.5 text-sm font-medium hover:bg-accent">
+                  <ImageIcon className="h-4 w-4" />
+                  Gallery
+                  <input type="file" accept="image/*" multiple className="hidden"
+                    onChange={async (e) => {
+                      const files = Array.from(e.target.files ?? []);
+                      e.target.value = "";
+                      for (const f of files) await addPhoto(f);
+                    }} />
+                </label>
+              </div>
             </div>
             {form.photos.length === 0 ? (
               <p className="rounded-lg border border-dashed border-border bg-background/40 px-3 py-4 text-center text-xs text-muted-foreground">
@@ -507,16 +519,22 @@ function ReceivingPage() {
             )}
           </div>
 
-          <div className="mt-4 flex justify-end gap-2">
+          <div className="mt-4 flex flex-wrap items-center justify-end gap-2">
+            {editingId && (
+              <span className="mr-auto rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-secondary-foreground">
+                Editing saved delivery
+              </span>
+            )}
             <button onClick={resetForm}
               className="rounded-lg border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-accent">
-              Clear
+              {editingId ? "Cancel edit" : "Clear"}
             </button>
             <button onClick={submit}
               className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90">
-              <Plus className="h-4 w-4" />
-              Save delivery
+              {editingId ? <CheckIcon className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+              {editingId ? "Update delivery" : "Save delivery"}
             </button>
+
           </div>
         </section>
 
