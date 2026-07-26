@@ -724,20 +724,26 @@ function ClosingPage() {
             )}
           </div>
 
-          <div className="mt-4 flex flex-wrap justify-end gap-2">
+          <div className="mt-4 flex flex-wrap items-center justify-end gap-2">
+            {editingId && (
+              <span className="mr-auto rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-secondary-foreground">
+                Editing saved report
+              </span>
+            )}
             <button
               onClick={resetForm}
               className="rounded-lg border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-accent"
             >
-              Clear
+              {editingId ? "Cancel edit" : "Clear"}
             </button>
             <button
               onClick={submit}
               className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
             >
-              <Plus className="h-4 w-4" />
-              Save closing report
+              {editingId ? <CheckIcon className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+              {editingId ? "Update report" : "Save closing report"}
             </button>
+
           </div>
         </section>
 
