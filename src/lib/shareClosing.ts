@@ -11,6 +11,14 @@ export const sharedClosingPayloadSchema = z.object({
   time: z.string().catch(""),
   branch: z.string().catch(""),
   closedBy: z.string().catch(""),
+  crew: z
+    .array(
+      z.object({
+        member: z.string().catch(""),
+        stations: z.array(z.string()).catch([]),
+      }),
+    )
+    .catch([]),
   checks: checksSchema,
   notes: z.string().catch(""),
   photos: z.array(z.string()).catch([]),

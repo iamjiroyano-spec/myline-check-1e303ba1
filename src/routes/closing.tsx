@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AppShell, useShellState } from "@/components/AppShell";
 import { lsStore } from "@/lib/lsStore";
 import { compressImageFile } from "@/lib/image";
-import { STAFF } from "@/lib/lineCheck";
+import { STAFF, getEffectiveSections } from "@/lib/lineCheck";
 import {
   Camera,
   Check as CheckIcon,
@@ -71,6 +71,8 @@ function saveTemplate(t: string[]) {
 
 type Checks = Record<string, boolean>;
 
+export type CrewEntry = { member: string; stations: string[] };
+
 type ClosingRecord = {
   id: string;
   createdAt: string;
@@ -78,6 +80,7 @@ type ClosingRecord = {
   time: string;
   branch: string;
   closedBy: string;
+  crew: CrewEntry[];
   checks: Checks;
   notes: string;
   photos: string[];
@@ -119,6 +122,7 @@ function ClosingPage() {
       time,
       branch: "",
       closedBy: "",
+      crew: [] as CrewEntry[],
       checks: emptyChecks(loadTemplate()),
       notes: "",
       photos: [] as string[],
@@ -183,6 +187,34 @@ function ClosingPage() {
     updateTemplate((arr) => arr.filter((x) => x !== name));
   }
 
+  const stationNames = useMemo(() => getEffectiveSections().map((s) => s.name), [records]);
+
+  function addCrew(member: string) {
+    setForm((f) =>
+      f.crew.some((c) => c.member === member)
+        ? f
+        : { ...f, crew: [...f.crew, { member, stations: [] }] },
+    );
+  }
+  function removeCrew(member: string) {
+    setForm((f) => ({ ...f, crew: f.crew.filter((c) => c.member !== member) }));
+  }
+  function toggleCrewStation(member: string, station: string) {
+    setForm((f) => ({
+      ...f,
+      crew: f.crew.map((c) =>
+        c.member === member
+          ? {
+              ...c,
+              stations: c.stations.includes(station)
+                ? c.stations.filter((s) => s !== station)
+                : [...c.stations, station],
+            }
+          : c,
+      ),
+    }));
+  }
+
   const sorted = useMemo(
     () => [...records].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1)),
     [records],
@@ -212,6 +244,7 @@ function ClosingPage() {
       time,
       branch: "",
       closedBy: "",
+      crew: [],
       checks: emptyChecks(template),
       notes: "",
       photos: [],
@@ -219,8 +252,9 @@ function ClosingPage() {
   }
 
   function submit() {
-    if (!form.closedBy.trim()) {
-      alert("Please select or enter who is closing.");
+    const crew = form.crew.filter((c) => c.member.trim());
+    if (!form.closedBy.trim() && crew.length === 0) {
+      alert("Please select at least one team member closing.");
       return;
     }
     const rec: ClosingRecord = {
@@ -229,7 +263,8 @@ function ClosingPage() {
       date: form.date,
       time: form.time,
       branch: form.branch.trim(),
-      closedBy: form.closedBy.trim(),
+      closedBy: form.closedBy.trim() || crew.map((c) => c.member).join(", "),
+      crew,
       checks: form.checks,
       notes: form.notes.trim(),
       photos: form.photos,
@@ -307,20 +342,88 @@ function ClosingPage() {
                 className={inputCls}
               />
             </Field>
-            <Field label="Closed by">
-              <select
+            <Field label="Closed by (optional note)">
+              <input
+                type="text"
                 value={form.closedBy}
                 onChange={(e) => setForm({ ...form, closedBy: e.target.value })}
+                placeholder="Auto-filled from team below"
                 className={inputCls}
-              >
-                <option value="">Select team member…</option>
-                {STAFF.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
+              />
             </Field>
+          </div>
+
+          {/* Closing team */}
+          <div className="mt-4 rounded-xl border border-border bg-background/40 p-3">
+            <h3 className="mb-2 text-sm font-semibold text-foreground">
+              Closing team{" "}
+              <span className="text-xs font-normal text-muted-foreground">
+                ({form.crew.length} selected)
+              </span>
+            </h3>
+
+            <select
+              value=""
+              onChange={(e) => {
+                const m = e.target.value;
+                if (m) addCrew(m);
+              }}
+              className={inputCls}
+            >
+              <option value="">Add team member…</option>
+              {STAFF.filter((s) => !form.crew.some((c) => c.member === s)).map((s) => (
+                <option key={s} value={s} className="bg-popover text-popover-foreground">
+                  {s}
+                </option>
+              ))}
+            </select>
+
+            {form.crew.length === 0 ? (
+              <p className="mt-2 text-xs text-muted-foreground">
+                Add the members who closed and tick the stations each of them closed.
+              </p>
+            ) : (
+              <ul className="mt-3 space-y-2">
+                {form.crew.map((c) => (
+                  <li key={c.member} className="rounded-lg border border-border bg-card p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-sm font-semibold">{c.member}</span>
+                      <button
+                        type="button"
+                        onClick={() => removeCrew(c.member)}
+                        className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+                        aria-label={`Remove ${c.member}`}
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {stationNames.length === 0 ? (
+                        <span className="text-xs text-muted-foreground">No stations yet.</span>
+                      ) : (
+                        stationNames.map((st) => {
+                          const on = c.stations.includes(st);
+                          return (
+                            <button
+                              key={st}
+                              type="button"
+                              onClick={() => toggleCrewStation(c.member, st)}
+                              className={`rounded-full border px-2.5 py-1 text-xs font-medium transition ${
+                                on
+                                  ? "border-primary bg-primary text-primary-foreground"
+                                  : "border-input bg-background text-foreground hover:bg-accent"
+                              }`}
+                            >
+                              {st}
+                            </button>
+                          );
+                        })
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
           {/* Checklist */}
@@ -571,6 +674,25 @@ function ClosingPage() {
                           <Info label="Branch" value={r.branch} />
                           <Info label="Closed by" value={r.closedBy} />
                         </dl>
+
+                        {(r.crew ?? []).length > 0 && (
+                          <div>
+                            <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                              Closing team
+                            </div>
+                            <ul className="space-y-1 text-sm">
+                              {(r.crew ?? []).map((c) => (
+                                <li key={c.member}>
+                                  <span className="font-semibold">{c.member}</span>
+                                  {": "}
+                                  <span className="text-muted-foreground">
+                                    {c.stations.length ? c.stations.join(", ") : "No station listed"}
+                                  </span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
 
                         <div>
                           <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
