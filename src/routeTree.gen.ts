@@ -12,14 +12,12 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ReceivingRouteImport } from './routes/receiving'
 import { Route as HistoryRouteImport } from './routes/history'
-import { Route as ClosingRouteImport } from './routes/closing'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as NameRouteImport } from './routes/$name'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SIdRouteImport } from './routes/s.$id'
 import { Route as RIdRouteImport } from './routes/r.$id'
 import { Route as HistoryShiftRouteImport } from './routes/history.shift'
-import { Route as CIdRouteImport } from './routes/c.$id'
 
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
@@ -34,11 +32,6 @@ const ReceivingRoute = ReceivingRouteImport.update({
 const HistoryRoute = HistoryRouteImport.update({
   id: '/history',
   path: '/history',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ClosingRoute = ClosingRouteImport.update({
-  id: '/closing',
-  path: '/closing',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -71,21 +64,14 @@ const HistoryShiftRoute = HistoryShiftRouteImport.update({
   path: '/shift',
   getParentRoute: () => HistoryRoute,
 } as any)
-const CIdRoute = CIdRouteImport.update({
-  id: '/c/$id',
-  path: '/c/$id',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$name': typeof NameRoute
   '/auth': typeof AuthRoute
-  '/closing': typeof ClosingRoute
   '/history': typeof HistoryRouteWithChildren
   '/receiving': typeof ReceivingRoute
   '/settings': typeof SettingsRoute
-  '/c/$id': typeof CIdRoute
   '/history/shift': typeof HistoryShiftRoute
   '/r/$id': typeof RIdRoute
   '/s/$id': typeof SIdRoute
@@ -94,11 +80,9 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$name': typeof NameRoute
   '/auth': typeof AuthRoute
-  '/closing': typeof ClosingRoute
   '/history': typeof HistoryRouteWithChildren
   '/receiving': typeof ReceivingRoute
   '/settings': typeof SettingsRoute
-  '/c/$id': typeof CIdRoute
   '/history/shift': typeof HistoryShiftRoute
   '/r/$id': typeof RIdRoute
   '/s/$id': typeof SIdRoute
@@ -108,11 +92,9 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/$name': typeof NameRoute
   '/auth': typeof AuthRoute
-  '/closing': typeof ClosingRoute
   '/history': typeof HistoryRouteWithChildren
   '/receiving': typeof ReceivingRoute
   '/settings': typeof SettingsRoute
-  '/c/$id': typeof CIdRoute
   '/history/shift': typeof HistoryShiftRoute
   '/r/$id': typeof RIdRoute
   '/s/$id': typeof SIdRoute
@@ -123,11 +105,9 @@ export interface FileRouteTypes {
     | '/'
     | '/$name'
     | '/auth'
-    | '/closing'
     | '/history'
     | '/receiving'
     | '/settings'
-    | '/c/$id'
     | '/history/shift'
     | '/r/$id'
     | '/s/$id'
@@ -136,11 +116,9 @@ export interface FileRouteTypes {
     | '/'
     | '/$name'
     | '/auth'
-    | '/closing'
     | '/history'
     | '/receiving'
     | '/settings'
-    | '/c/$id'
     | '/history/shift'
     | '/r/$id'
     | '/s/$id'
@@ -149,11 +127,9 @@ export interface FileRouteTypes {
     | '/'
     | '/$name'
     | '/auth'
-    | '/closing'
     | '/history'
     | '/receiving'
     | '/settings'
-    | '/c/$id'
     | '/history/shift'
     | '/r/$id'
     | '/s/$id'
@@ -163,11 +139,9 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   NameRoute: typeof NameRoute
   AuthRoute: typeof AuthRoute
-  ClosingRoute: typeof ClosingRoute
   HistoryRoute: typeof HistoryRouteWithChildren
   ReceivingRoute: typeof ReceivingRoute
   SettingsRoute: typeof SettingsRoute
-  CIdRoute: typeof CIdRoute
   RIdRoute: typeof RIdRoute
   SIdRoute: typeof SIdRoute
 }
@@ -193,13 +167,6 @@ declare module '@tanstack/react-router' {
       path: '/history'
       fullPath: '/history'
       preLoaderRoute: typeof HistoryRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/closing': {
-      id: '/closing'
-      path: '/closing'
-      fullPath: '/closing'
-      preLoaderRoute: typeof ClosingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -244,13 +211,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HistoryShiftRouteImport
       parentRoute: typeof HistoryRoute
     }
-    '/c/$id': {
-      id: '/c/$id'
-      path: '/c/$id'
-      fullPath: '/c/$id'
-      preLoaderRoute: typeof CIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
@@ -269,11 +229,9 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   NameRoute: NameRoute,
   AuthRoute: AuthRoute,
-  ClosingRoute: ClosingRoute,
   HistoryRoute: HistoryRouteWithChildren,
   ReceivingRoute: ReceivingRoute,
   SettingsRoute: SettingsRoute,
-  CIdRoute: CIdRoute,
   RIdRoute: RIdRoute,
   SIdRoute: SIdRoute,
 }

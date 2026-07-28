@@ -20,31 +20,17 @@ function collectSnapshot(): Record<string, string> {
   return out;
 }
 
-let pendingWhileOffline = false;
-
-function isOffline() {
-  return typeof navigator !== "undefined" && navigator.onLine === false;
-}
-
 async function pushNow() {
   if (!currentUserId) return;
-  if (isOffline()) {
-    // Keep the change locally; it is pushed as soon as we're back online.
-    pendingWhileOffline = true;
-    return;
-  }
   const data = collectSnapshot();
   try {
-    const { error } = await supabase
+    await supabase
       .from("user_state")
       .upsert(
         { user_id: currentUserId, data, updated_at: new Date().toISOString() },
         { onConflict: "user_id" },
       );
-    if (error) throw error;
-    pendingWhileOffline = false;
   } catch (e) {
-    pendingWhileOffline = true;
     console.warn("[sync] push failed", e);
   }
 }
@@ -57,13 +43,6 @@ function schedulePush() {
     void pushNow();
   }, 800);
 }
-
-function onBackOnline() {
-  if (!currentUserId) return;
-  if (pendingWhileOffline) void pushNow();
-  else void pullFromServer();
-}
-
 
 function onLocalWrite() {
   schedulePush();
@@ -130,7 +109,6 @@ export async function startSync(userId: string) {
     window.addEventListener("linecheck:local-write", onLocalWrite);
     window.addEventListener("pagehide", flushPendingPush);
     window.addEventListener("beforeunload", flushPendingPush);
-    window.addEventListener("online", onBackOnline);
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "hidden") flushPendingPush();
     });
@@ -138,11 +116,9 @@ export async function startSync(userId: string) {
       window.removeEventListener("linecheck:local-write", onLocalWrite);
       window.removeEventListener("pagehide", flushPendingPush);
       window.removeEventListener("beforeunload", flushPendingPush);
-      window.removeEventListener("online", onBackOnline);
     };
   }
-  if (!isOffline()) await pullFromServer();
-
+  await pullFromServer();
 }
 
 
