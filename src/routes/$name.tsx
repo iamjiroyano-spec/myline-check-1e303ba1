@@ -195,6 +195,15 @@ function SectionPage() {
     [name, shell.date, shell.shift],
   );
   const [state, setState] = useState<SectionState>(() => loadSection(name, shell.date));
+  // Tracks which storage key the current `state` was loaded from. Reloading
+  // during render (instead of in an effect) guarantees we never write one
+  // station's/date's data under another key.
+  const stateKeyRef = useRef(key);
+  if (stateKeyRef.current !== key) {
+    stateKeyRef.current = key;
+    setState(loadSection(name, shell.date));
+  }
+
   const [comment, setComment] = useState<string>("");
   const [commentPhotos, setCommentPhotos] = useState<string[]>([]);
   const [commentViewer, setCommentViewer] = useState<{ index: number; photo: string } | null>(null);
@@ -465,21 +474,22 @@ function SectionPage() {
 
 
   useEffect(() => {
-    setState(loadSection(name, shell.date));
-  }, [name, shell.date]);
-
-  useEffect(() => {
     const s = loadSectionStruct(name, defaultStruct);
     setStruct(s);
     setDraft(s);
   }, [name, defaultStruct]);
 
   useEffect(() => {
+    // Only persist once the in-memory state belongs to the current key,
+    // otherwise switching station/date would overwrite the new key with the
+    // previously loaded station's state.
+    if (stateKeyRef.current !== key) return;
     try {
       lsStore.setItem(key, JSON.stringify(state));
       window.dispatchEvent(new Event("linecheck:update"));
     } catch {}
   }, [key, state]);
+
 
   if (!section) return <div className="p-10">Section not found.</div>;
 
