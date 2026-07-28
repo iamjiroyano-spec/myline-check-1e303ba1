@@ -4,8 +4,6 @@
 
 let currentUid = "guest";
 const listeners = new Set<() => void>();
-const SYNC_META_KEY = "linecheck:__sync:modified";
-let dirtyTrackingSuppressed = 0;
 
 export function setUserScope(uid: string | null) {
   const next = uid || "guest";
@@ -45,58 +43,6 @@ function emitWrite() {
   }
 }
 
-function readModifiedMap(): Record<string, number> {
-  const s = safe();
-  if (!s) return {};
-  try {
-    const raw = s.getItem(scopedKey(SYNC_META_KEY));
-    const parsed = raw ? JSON.parse(raw) : {};
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
-    const out: Record<string, number> = {};
-    for (const [key, value] of Object.entries(parsed)) {
-      if (typeof key === "string" && typeof value === "number" && Number.isFinite(value)) {
-        out[key] = value;
-      }
-    }
-    return out;
-  } catch {
-    return {};
-  }
-}
-
-function writeModifiedMap(map: Record<string, number>) {
-  const s = safe();
-  if (!s) return;
-  try {
-    s.setItem(scopedKey(SYNC_META_KEY), JSON.stringify(map));
-  } catch {}
-}
-
-function touchModified(key: string) {
-  if (dirtyTrackingSuppressed > 0) return;
-  if (!key.startsWith("linecheck:") || key === SYNC_META_KEY) return;
-  const map = readModifiedMap();
-  map[key] = Date.now();
-  writeModifiedMap(map);
-}
-
-export function getModifiedTimes() {
-  return readModifiedMap();
-}
-
-export function setModifiedTimes(map: Record<string, number>) {
-  writeModifiedMap(map);
-}
-
-export function withoutDirtyTracking<T>(fn: () => T): T {
-  dirtyTrackingSuppressed++;
-  try {
-    return fn();
-  } finally {
-    dirtyTrackingSuppressed--;
-  }
-}
-
 export const lsStore = {
   getItem(key: string) {
     const s = safe();
@@ -104,18 +50,12 @@ export const lsStore = {
   },
   setItem(key: string, value: string) {
     const s = safe();
-    if (s) {
-      s.setItem(scopedKey(key), value);
-      touchModified(key);
-    }
+    if (s) s.setItem(scopedKey(key), value);
     emitWrite();
   },
   removeItem(key: string) {
     const s = safe();
-    if (s) {
-      s.removeItem(scopedKey(key));
-      touchModified(key);
-    }
+    if (s) s.removeItem(scopedKey(key));
     emitWrite();
   },
   /** List raw (un-prefixed) keys belonging to the current user. */

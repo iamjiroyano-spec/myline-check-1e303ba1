@@ -2,16 +2,9 @@
 // the signed-in user) to the `user_state` table. On sign-in we pull the
 // remote snapshot; every local write is debounced and pushed back.
 import { supabase } from "@/integrations/supabase/client";
-import {
-  getModifiedTimes,
-  lsStore,
-  getUserScope,
-  setModifiedTimes,
-  withoutDirtyTracking,
-} from "@/lib/lsStore";
+import { lsStore, getUserScope } from "@/lib/lsStore";
 
 const PREFIX = "linecheck:";
-const SYNC_META_KEY = "linecheck:__sync:modified";
 let suppressPush = false;
 let pushTimer: ReturnType<typeof setTimeout> | null = null;
 let currentUserId: string | null = null;
@@ -27,31 +20,17 @@ function collectSnapshot(): Record<string, string> {
   return out;
 }
 
-let pendingWhileOffline = false;
-
-function isOffline() {
-  return typeof navigator !== "undefined" && navigator.onLine === false;
-}
-
 async function pushNow() {
   if (!currentUserId) return;
-  if (isOffline()) {
-    // Keep the change locally; it is pushed as soon as we're back online.
-    pendingWhileOffline = true;
-    return;
-  }
   const data = collectSnapshot();
   try {
-    const { error } = await supabase
+    await supabase
       .from("user_state")
       .upsert(
         { user_id: currentUserId, data, updated_at: new Date().toISOString() },
         { onConflict: "user_id" },
       );
-    if (error) throw error;
-    pendingWhileOffline = false;
   } catch (e) {
-    pendingWhileOffline = true;
     console.warn("[sync] push failed", e);
   }
 }
@@ -64,13 +43,6 @@ function schedulePush() {
     void pushNow();
   }, 800);
 }
-
-function onBackOnline() {
-  if (!currentUserId) return;
-  if (pendingWhileOffline) void pushNow();
-  else void pullFromServer();
-}
-
 
 function onLocalWrite() {
   schedulePush();
@@ -91,44 +63,18 @@ async function pullFromServer() {
       await pushNow();
       return;
     }
-    const remoteMeta = parseRemoteMeta(remote);
-    const localMeta = getModifiedTimes();
-    const mergedMeta = mergeMeta(localMeta, remoteMeta);
-    let hasLocalNewerChanges = false;
     suppressPush = true;
     try {
-      // Merge safely: preserve local values when they are newer than the
-      // server snapshot (or when both sides are legacy/unversioned). This
-      // prevents a quick refresh from pulling an older cloud copy over items
-      // the user just checked locally but had not pushed yet.
-      const localKeys = new Set(
-        lsStore.keys().filter((k) => k.startsWith(PREFIX) && k !== SYNC_META_KEY),
-      );
+      // Merge: overwrite with remote values, but preserve any local-only keys
+      // (e.g. writes that hadn't been pushed yet before a refresh).
+      const localKeys = new Set(lsStore.keys().filter((k) => k.startsWith(PREFIX)));
       for (const [k, v] of Object.entries(remote)) {
-        if (typeof v !== "string" || !k.startsWith(PREFIX) || k === SYNC_META_KEY) continue;
-        const localValue = lsStore.getItem(k);
-        const localTime = localMeta[k] ?? 0;
-        const remoteTime = remoteMeta[k] ?? 0;
-        if (localValue != null && localTime >= remoteTime && localValue !== v) {
-          hasLocalNewerChanges = true;
+        if (typeof v === "string" && k.startsWith(PREFIX)) {
+          lsStore.setItem(k, v);
           localKeys.delete(k);
-          continue;
-        }
-        withoutDirtyTracking(() => lsStore.setItem(k, v));
-        localKeys.delete(k);
-      }
-      // localKeys now contains local-only keys. Remove only when the server has
-      // a newer tombstone; otherwise keep them and push the merged snapshot.
-      for (const k of localKeys) {
-        const localTime = localMeta[k] ?? 0;
-        const remoteTime = remoteMeta[k] ?? 0;
-        if (remoteTime > localTime) {
-          withoutDirtyTracking(() => lsStore.removeItem(k));
-        } else {
-          hasLocalNewerChanges = true;
         }
       }
-      withoutDirtyTracking(() => setModifiedTimes(mergedMeta));
+      // localKeys now contains local-only keys — leave them intact.
     } finally {
       suppressPush = false;
     }
@@ -137,32 +83,11 @@ async function pullFromServer() {
       window.dispatchEvent(new Event("linecheck:staff-update"));
       window.dispatchEvent(new Event("linecheck:brand-update"));
     }
-    // If local data won any merge conflict, publish the merged snapshot so it
-    // becomes the cloud source of truth instead of being lost on next refresh.
-    if (hasLocalNewerChanges) void pushNow();
+    // If we had unpushed local-only keys, push the merged snapshot back up.
+    void pushNow();
   } catch (e) {
     console.warn("[sync] pull failed", e);
   }
-}
-
-function parseRemoteMeta(remote: Record<string, string>): Record<string, number> {
-  try {
-    const parsed = JSON.parse(remote[SYNC_META_KEY] || "{}");
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
-    const out: Record<string, number> = {};
-    for (const [key, value] of Object.entries(parsed)) {
-      if (typeof value === "number" && Number.isFinite(value)) out[key] = value;
-    }
-    return out;
-  } catch {
-    return {};
-  }
-}
-
-function mergeMeta(a: Record<string, number>, b: Record<string, number>) {
-  const out: Record<string, number> = { ...a };
-  for (const [key, value] of Object.entries(b)) out[key] = Math.max(out[key] ?? 0, value);
-  return out;
 }
 
 function flushPendingPush() {
@@ -184,7 +109,6 @@ export async function startSync(userId: string) {
     window.addEventListener("linecheck:local-write", onLocalWrite);
     window.addEventListener("pagehide", flushPendingPush);
     window.addEventListener("beforeunload", flushPendingPush);
-    window.addEventListener("online", onBackOnline);
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "hidden") flushPendingPush();
     });
@@ -192,11 +116,9 @@ export async function startSync(userId: string) {
       window.removeEventListener("linecheck:local-write", onLocalWrite);
       window.removeEventListener("pagehide", flushPendingPush);
       window.removeEventListener("beforeunload", flushPendingPush);
-      window.removeEventListener("online", onBackOnline);
     };
   }
-  if (!isOffline()) await pullFromServer();
-
+  await pullFromServer();
 }
 
 
