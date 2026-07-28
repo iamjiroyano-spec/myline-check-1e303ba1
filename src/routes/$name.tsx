@@ -530,45 +530,37 @@ function SectionPage() {
     setEntry(group, item, occ, { status: cur === "OK" ? "" : "OK" });
   };
 
-  const applyBulkStatus = (nextStatus: "OK" | "") => {
-    // Read the freshest snapshot from storage so a racing sync pull can't
-    // clobber the bulk change with the pre-mark data.
-    const base: SectionState = (() => {
-      try {
-        const raw = lsStore.getItem(key);
-        if (raw) return JSON.parse(raw) as SectionState;
-      } catch {}
-      return state;
-    })();
-    const entries = { ...(base.entries ?? {}) };
-    for (const ci of allCatItems) {
-      const k = entryKey(ci.group, ci.name, ci.occ);
-      const prev = entries[k];
-      const prevSlot = prev?.[slot] ?? emptyEntry();
-      entries[k] = {
-        op: prev?.op ?? emptyEntry(),
-        mid: prev?.mid ?? emptyEntry(),
-        cl: prev?.cl ?? emptyEntry(),
-        [slot]: {
-          ...prevSlot,
-          status: nextStatus,
-          note: nextStatus === "" ? "" : prevSlot.note ?? "",
-        },
-      };
-    }
-    const next = { ...base, entries };
-    try {
-      lsStore.setItem(key, JSON.stringify(next));
-      window.dispatchEvent(new Event("linecheck:update"));
-    } catch {}
-    setState(next);
-    setSavedFlash(true);
-    setTimeout(() => setSavedFlash(false), 1400);
+  const markAllOK = () => {
+    setState((prev) => {
+      const entries = { ...prev.entries };
+      for (const ci of allCatItems) {
+        const k = entryKey(ci.group, ci.name, ci.occ);
+        entries[k] = {
+          op: entries[k]?.op ?? emptyEntry(),
+          mid: entries[k]?.mid ?? emptyEntry(),
+          cl: entries[k]?.cl ?? emptyEntry(),
+          [slot]: { status: "OK", note: entries[k]?.[slot]?.note ?? "" },
+        };
+      }
+      return { ...prev, entries };
+    });
   };
 
-  const markAllOK = () => applyBulkStatus("OK");
-  const unmarkAll = () => applyBulkStatus("");
-
+  const unmarkAll = () => {
+    setState((prev) => {
+      const entries = { ...prev.entries };
+      for (const ci of allCatItems) {
+        const k = entryKey(ci.group, ci.name, ci.occ);
+        entries[k] = {
+          op: entries[k]?.op ?? emptyEntry(),
+          mid: entries[k]?.mid ?? emptyEntry(),
+          cl: entries[k]?.cl ?? emptyEntry(),
+          [slot]: { status: "", note: "" },
+        };
+      }
+      return { ...prev, entries };
+    });
+  };
 
 
   const saveCheck = () => {
