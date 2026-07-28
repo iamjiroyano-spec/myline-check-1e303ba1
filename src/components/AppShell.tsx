@@ -878,9 +878,41 @@ function TeamMemberSelect({ value, onChange }: { value: string; onChange: (v: st
 }
 
 export function useShellState(initialTitle: string) {
-  const [date, setDate] = useState(todayISO());
-  const [shift, setShift] = useState<Slot>(defaultShift());
+  const [date, setDateState] = useState(() => {
+    try {
+      const saved = lsStore.getItem("linecheck:ui:date") || localStorage.getItem("linecheck:ui:date");
+      return saved && /^\d{4}-\d{2}-\d{2}$/.test(saved) ? saved : todayISO();
+    } catch {
+      return todayISO();
+    }
+  });
+  const [shift, setShiftState] = useState<Slot>(() => {
+    try {
+      const saved = lsStore.getItem("linecheck:ui:shift") || localStorage.getItem("linecheck:ui:shift");
+      const valid = new Set(getShifts().map((s) => s.id));
+      return saved && valid.has(saved) ? saved : defaultShift();
+    } catch {
+      return defaultShift();
+    }
+  });
   const [member, setMemberState] = useState("");
+
+  const setDate = (v: string) => {
+    const next = v || todayISO();
+    setDateState(next);
+    try {
+      lsStore.setItem("linecheck:ui:date", next);
+      localStorage.setItem("linecheck:ui:date", next);
+    } catch {}
+  };
+
+  const setShift = (v: Slot) => {
+    setShiftState(v);
+    try {
+      lsStore.setItem("linecheck:ui:shift", v);
+      localStorage.setItem("linecheck:ui:shift", v);
+    } catch {}
+  };
 
   // Load member for the current (date, shift) whenever it changes.
   useEffect(() => {

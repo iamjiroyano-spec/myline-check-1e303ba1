@@ -2,10 +2,12 @@
 // functions that verify the PIN server-side and read/write the owner's
 // synced state.
 import { lsStore } from "@/lib/lsStore";
+import { getModifiedTimes, setModifiedTimes, withoutDirtyTracking } from "@/lib/lsStore";
 import type { StaffSession } from "@/lib/staffSession";
 import { staffPullState, staffPushState } from "@/lib/staffAuth.functions";
 
 const PREFIX = "linecheck:";
+const SYNC_META_KEY = "linecheck:__sync:modified";
 let session: StaffSession | null = null;
 let suppress = false;
 let timer: ReturnType<typeof setTimeout> | null = null;
@@ -88,11 +90,38 @@ export async function startStaffSync(s: StaffSession) {
 
     const remote = res?.ok ? res.state : null;
     if (remote) {
+      const remoteMeta = parseRemoteMeta(remote);
+      const localMeta = getModifiedTimes();
+      const mergedMeta = mergeMeta(localMeta, remoteMeta);
+      let hasLocalNewerChanges = false;
       suppress = true;
       try {
+        const localKeys = new Set(
+          lsStore.keys().filter((k) => k.startsWith(PREFIX) && k !== SYNC_META_KEY),
+        );
         for (const [k, v] of Object.entries(remote)) {
-          if (typeof v === "string" && k.startsWith(PREFIX)) lsStore.setItem(k, v);
+          if (typeof v !== "string" || !k.startsWith(PREFIX) || k === SYNC_META_KEY) continue;
+          const localValue = lsStore.getItem(k);
+          const localTime = localMeta[k] ?? 0;
+          const remoteTime = remoteMeta[k] ?? 0;
+          if (localValue != null && localTime >= remoteTime && localValue !== v) {
+            hasLocalNewerChanges = true;
+            localKeys.delete(k);
+            continue;
+          }
+          withoutDirtyTracking(() => lsStore.setItem(k, v));
+          localKeys.delete(k);
         }
+        for (const k of localKeys) {
+          const localTime = localMeta[k] ?? 0;
+          const remoteTime = remoteMeta[k] ?? 0;
+          if (remoteTime > localTime) {
+            withoutDirtyTracking(() => lsStore.removeItem(k));
+          } else {
+            hasLocalNewerChanges = true;
+          }
+        }
+        withoutDirtyTracking(() => setModifiedTimes(mergedMeta));
       } finally {
         suppress = false;
       }
@@ -102,10 +131,31 @@ export async function startStaffSync(s: StaffSession) {
         window.dispatchEvent(new Event("linecheck:members-update"));
         window.dispatchEvent(new Event("linecheck:brand-update"));
       }
+      if (hasLocalNewerChanges) void pushNow();
     }
   } catch (e) {
     console.warn("[staff-sync] pull failed", e);
   }
+}
+
+function parseRemoteMeta(remote: Record<string, string>): Record<string, number> {
+  try {
+    const parsed = JSON.parse(remote[SYNC_META_KEY] || "{}");
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
+    const out: Record<string, number> = {};
+    for (const [key, value] of Object.entries(parsed)) {
+      if (typeof value === "number" && Number.isFinite(value)) out[key] = value;
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
+function mergeMeta(a: Record<string, number>, b: Record<string, number>) {
+  const out: Record<string, number> = { ...a };
+  for (const [key, value] of Object.entries(b)) out[key] = Math.max(out[key] ?? 0, value);
+  return out;
 }
 
 export function stopStaffSync() {
