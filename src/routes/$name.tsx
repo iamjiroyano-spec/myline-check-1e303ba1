@@ -465,21 +465,22 @@ function SectionPage() {
 
 
   useEffect(() => {
-    setState(loadSection(name, shell.date));
-  }, [name, shell.date]);
-
-  useEffect(() => {
     const s = loadSectionStruct(name, defaultStruct);
     setStruct(s);
     setDraft(s);
   }, [name, defaultStruct]);
 
   useEffect(() => {
+    // Only persist once the in-memory state belongs to the current key,
+    // otherwise switching station/date would overwrite the new key with the
+    // previously loaded station's state.
+    if (stateKeyRef.current !== key) return;
     try {
       lsStore.setItem(key, JSON.stringify(state));
       window.dispatchEvent(new Event("linecheck:update"));
     } catch {}
   }, [key, state]);
+
 
   if (!section) return <div className="p-10">Section not found.</div>;
 
