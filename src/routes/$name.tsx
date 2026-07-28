@@ -195,6 +195,15 @@ function SectionPage() {
     [name, shell.date, shell.shift],
   );
   const [state, setState] = useState<SectionState>(() => loadSection(name, shell.date));
+  // Tracks which storage key the current `state` was loaded from. Reloading
+  // during render (instead of in an effect) guarantees we never write one
+  // station's/date's data under another key.
+  const stateKeyRef = useRef(key);
+  if (stateKeyRef.current !== key) {
+    stateKeyRef.current = key;
+    setState(loadSection(name, shell.date));
+  }
+
   const [comment, setComment] = useState<string>("");
   const [commentPhotos, setCommentPhotos] = useState<string[]>([]);
   const [commentViewer, setCommentViewer] = useState<{ index: number; photo: string } | null>(null);
