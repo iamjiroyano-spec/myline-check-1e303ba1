@@ -1,5 +1,4 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { stationSlug } from "@/lib/slug";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell, useShellState } from "@/components/AppShell";
 import {
@@ -206,8 +205,8 @@ function ShiftDetail() {
                   {r.section}
                 </h3>
                 <Link
-                  to="/$name"
-                  params={{ name: stationSlug(r.section) }}
+                  to="/section/$name"
+                  params={{ name: r.section }}
                   search={{ date, shift }}
                   className="ml-auto inline-flex items-center gap-1 rounded-full border border-border bg-card px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-foreground hover:bg-accent"
                   title="Reopen this shift for editing"
