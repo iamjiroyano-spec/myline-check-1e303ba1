@@ -1,8 +1,7 @@
 // Sync for PIN (name + PIN) team-member sessions. Uses public server
 // functions that verify the PIN server-side and read/write the owner's
 // synced state.
-import { lsStore } from "@/lib/lsStore";
-import { getModifiedTimes, setModifiedTimes, withoutDirtyTracking } from "@/lib/lsStore";
+import { getModifiedTimes, lsStore, setModifiedTimes, withoutDirtyTracking } from "@/lib/lsStore";
 import type { StaffSession } from "@/lib/staffSession";
 import { staffPullState, staffPushState } from "@/lib/staffAuth.functions";
 
