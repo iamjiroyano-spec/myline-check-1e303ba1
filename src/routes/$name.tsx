@@ -531,36 +531,47 @@ function SectionPage() {
   };
 
   const markAllOK = () => {
-    setState((prev) => {
-      const entries = { ...prev.entries };
-      for (const ci of allCatItems) {
-        const k = entryKey(ci.group, ci.name, ci.occ);
-        entries[k] = {
-          op: entries[k]?.op ?? emptyEntry(),
-          mid: entries[k]?.mid ?? emptyEntry(),
-          cl: entries[k]?.cl ?? emptyEntry(),
-          [slot]: { status: "OK", note: entries[k]?.[slot]?.note ?? "" },
-        };
-      }
-      return { ...prev, entries };
-    });
+    const entries = { ...state.entries };
+    for (const ci of allCatItems) {
+      const k = entryKey(ci.group, ci.name, ci.occ);
+      entries[k] = {
+        op: entries[k]?.op ?? emptyEntry(),
+        mid: entries[k]?.mid ?? emptyEntry(),
+        cl: entries[k]?.cl ?? emptyEntry(),
+        [slot]: { status: "OK", note: entries[k]?.[slot]?.note ?? "" },
+      };
+    }
+    const next = { ...state, entries };
+    setState(next);
+    try {
+      lsStore.setItem(key, JSON.stringify(next));
+      window.dispatchEvent(new Event("linecheck:update"));
+    } catch {}
+    setSavedFlash(true);
+    setTimeout(() => setSavedFlash(false), 1400);
   };
 
   const unmarkAll = () => {
-    setState((prev) => {
-      const entries = { ...prev.entries };
-      for (const ci of allCatItems) {
-        const k = entryKey(ci.group, ci.name, ci.occ);
-        entries[k] = {
-          op: entries[k]?.op ?? emptyEntry(),
-          mid: entries[k]?.mid ?? emptyEntry(),
-          cl: entries[k]?.cl ?? emptyEntry(),
-          [slot]: { status: "", note: "" },
-        };
-      }
-      return { ...prev, entries };
-    });
+    const entries = { ...state.entries };
+    for (const ci of allCatItems) {
+      const k = entryKey(ci.group, ci.name, ci.occ);
+      entries[k] = {
+        op: entries[k]?.op ?? emptyEntry(),
+        mid: entries[k]?.mid ?? emptyEntry(),
+        cl: entries[k]?.cl ?? emptyEntry(),
+        [slot]: { status: "", note: "" },
+      };
+    }
+    const next = { ...state, entries };
+    setState(next);
+    try {
+      lsStore.setItem(key, JSON.stringify(next));
+      window.dispatchEvent(new Event("linecheck:update"));
+    } catch {}
+    setSavedFlash(true);
+    setTimeout(() => setSavedFlash(false), 1400);
   };
+
 
 
   const saveCheck = () => {
