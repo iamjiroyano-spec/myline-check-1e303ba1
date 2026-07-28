@@ -5,6 +5,7 @@ import { AppShell, useShellState, SECTION_ICONS } from "@/components/AppShell";
 import { SECTIONS, STAFF, STATUSES, getShifts, saveShifts, type Slot, type ShiftDef } from "@/lib/lineCheck";
 import { supabase } from "@/integrations/supabase/client";
 import { ADMIN_EMAIL, isAdminEmail } from "@/lib/allowlist";
+import { hashPinBrowser } from "@/lib/staffSession";
 import {
   ArrowLeft,
   Settings as SettingsIcon,
@@ -23,6 +24,7 @@ import {
   Pencil,
   ShieldCheck,
   GripVertical,
+  KeyRound,
 } from "lucide-react";
 import {
   DndContext,
@@ -54,7 +56,7 @@ export const Route = createFileRoute("/settings")({
   component: SettingsPage,
 });
 
-type Tab = "branding" | "stations" | "team" | "statuses" | "shifts" | "shelves" | "containers" | "access" | "admins";
+type Tab = "branding" | "stations" | "team" | "members" | "statuses" | "shifts" | "shelves" | "containers" | "access" | "admins" | "pins";
 
 const ICON_OPTIONS = Object.keys(SECTION_ICONS);
 
@@ -66,6 +68,7 @@ type LocalStation = {
 
 const STATIONS_KEY = "linecheck:settings:stations";
 const STAFF_KEY = "linecheck:settings:staff";
+const MEMBERS_KEY = "linecheck:settings:members";
 const STATUSES_KEY = "linecheck:settings:statuses";
 const SHELVES_KEY = "linecheck:settings:shelves";
 const CONTAINERS_KEY = "linecheck:settings:containers";
@@ -137,6 +140,9 @@ function SettingsPage() {
             Stations & Items
           </TabPill>
           <TabPill active={tab === "team"} onClick={() => setTab("team")} icon={<Users className="h-4 w-4" />}>
+            Manager
+          </TabPill>
+          <TabPill active={tab === "members"} onClick={() => setTab("members")} icon={<Users className="h-4 w-4" />}>
             Team Members
           </TabPill>
           <TabPill active={tab === "statuses"} onClick={() => setTab("statuses")} icon={<Tag className="h-4 w-4" />}>
@@ -150,6 +156,9 @@ function SettingsPage() {
           </TabPill>
           <TabPill active={tab === "containers"} onClick={() => setTab("containers")} icon={<Package className="h-4 w-4" />}>
             Container
+          </TabPill>
+          <TabPill active={tab === "pins"} onClick={() => setTab("pins")} icon={<KeyRound className="h-4 w-4" />}>
+            PIN Access
           </TabPill>
           {isAdmin && (
             <TabPill active={tab === "access"} onClick={() => setTab("access")} icon={<ShieldCheck className="h-4 w-4" />}>
@@ -166,6 +175,7 @@ function SettingsPage() {
         {tab === "branding" && <BrandingPanel />}
         {tab === "stations" && <StationsPanel />}
         {tab === "team" && <TeamPanel />}
+        {tab === "members" && <MembersPanel />}
         {tab === "statuses" && <StatusPanel />}
         {tab === "shifts" && <ShiftsPanel />}
         {tab === "shelves" && (
@@ -186,6 +196,7 @@ function SettingsPage() {
             eventName="linecheck:containers-update"
           />
         )}
+        {tab === "pins" && <PinAccessPanel />}
         {tab === "access" && isAdmin && <AccessPanel />}
         {tab === "admins" && isAdmin && <AdminsPanel />}
       </div>
@@ -746,17 +757,53 @@ function IconPicker({ value, onChange }: { value: string; onChange: (v: string) 
 /* ============= TEAM ============= */
 
 function TeamPanel() {
-  const [members, setMembers] = useState<string[]>(() => loadJSON(STAFF_KEY, STAFF));
+  return (
+    <PeoplePanel
+      storageKey={STAFF_KEY}
+      updateEvent="linecheck:staff-update"
+      defaults={STAFF}
+      placeholder="New manager..."
+    />
+  );
+}
+
+function MembersPanel() {
+  return (
+    <PeoplePanel
+      storageKey={MEMBERS_KEY}
+      updateEvent="linecheck:members-update"
+      defaults={[]}
+      placeholder="New team member..."
+    />
+  );
+}
+
+function PeoplePanel({
+  storageKey,
+  updateEvent,
+  defaults,
+  placeholder,
+}: {
+  storageKey: string;
+  updateEvent: string;
+  defaults: string[];
+  placeholder: string;
+}) {
+  const [members, setMembers] = useState<string[]>(() => loadJSON(storageKey, defaults));
   const [name, setName] = useState("");
 
   useEffect(() => {
-    lsStore.setItem(STAFF_KEY, JSON.stringify(members));
-    window.dispatchEvent(new Event("linecheck:staff-update"));
-  }, [members]);
+    lsStore.setItem(storageKey, JSON.stringify(members));
+    window.dispatchEvent(new Event(updateEvent));
+  }, [members, storageKey, updateEvent]);
 
   const add = () => {
     const n = name.trim();
     if (!n) return;
+    if (members.some((m) => m.toLowerCase() === n.toLowerCase())) {
+      setName("");
+      return;
+    }
     setMembers((m) => [n, ...m]);
     setName("");
   };
@@ -768,9 +815,10 @@ function TeamPanel() {
           value={name}
           onChange={(e) => setName(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && add()}
-          placeholder="New team member..."
+          placeholder={placeholder}
           className="flex-1 rounded-full border border-border bg-card px-5 py-3 text-sm outline-none focus:border-foreground/30"
         />
+
         <button
           onClick={add}
           className="flex items-center gap-1.5 rounded-full bg-muted-foreground/80 px-5 py-3 text-sm font-semibold text-background hover:bg-foreground"
@@ -1413,6 +1461,144 @@ function AdminsPanel() {
           )}
         </ul>
       )}
+    </section>
+  );
+}
+
+type PinRow = { id: string; name: string; created_at: string };
+
+function PinAccessPanel() {
+  const [rows, setRows] = useState<PinRow[]>([]);
+  const [name, setName] = useState("");
+  const [pin, setPin] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  const load = async () => {
+    const { data, error } = await supabase
+      .from("staff_logins")
+      .select("id, name, created_at")
+      .order("created_at", { ascending: true });
+    if (error) setMsg(error.message);
+    else setRows((data ?? []) as PinRow[]);
+  };
+
+  useEffect(() => {
+    void load();
+  }, []);
+
+  const add = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const n = name.trim();
+    if (!n || !/^\d{4,8}$/.test(pin)) {
+      setMsg("Enter a name and a 4-8 digit PIN.");
+      return;
+    }
+    setBusy(true);
+    setMsg(null);
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      const owner_id = userData.user?.id;
+      if (!owner_id) throw new Error("Sign in required");
+      const pin_hash = await hashPinBrowser(n, pin);
+      const { error } = await supabase
+        .from("staff_logins")
+        .insert({ owner_id, name: n, pin_hash });
+      if (error) throw error;
+      setName("");
+      setPin("");
+      await load();
+    } catch (err: any) {
+      setMsg(
+        String(err?.message || "").includes("duplicate")
+          ? "That name is already taken. Use a different one."
+          : err?.message || "Could not create PIN login",
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const resetPin = async (row: PinRow) => {
+    const next = window.prompt(`New PIN for ${row.name} (4-8 digits)`)?.trim() ?? "";
+    if (!/^\d{4,8}$/.test(next)) return;
+    const pin_hash = await hashPinBrowser(row.name, next);
+    const { error } = await supabase
+      .from("staff_logins")
+      .update({ pin_hash })
+      .eq("id", row.id);
+    if (error) setMsg(error.message);
+    else setMsg(`PIN updated for ${row.name}.`);
+  };
+
+  const remove = async (row: PinRow) => {
+    if (!window.confirm(`Remove PIN access for ${row.name}?`)) return;
+    const { error } = await supabase.from("staff_logins").delete().eq("id", row.id);
+    if (error) setMsg(error.message);
+    else await load();
+  };
+
+  return (
+    <section className="rounded-2xl border border-border bg-card p-5">
+      <h3 className="text-sm font-bold">Team PIN access</h3>
+      <p className="mt-1 text-xs text-muted-foreground">
+        Create a simple name + PIN login for a team member. They can only open
+        the Receiving and Closing reports — no dashboard, stations or settings.
+      </p>
+
+      <form onSubmit={add} className="mt-4 flex flex-wrap gap-2">
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Team member name"
+          className="min-w-[10rem] flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-foreground"
+        />
+        <input
+          value={pin}
+          onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 8))}
+          inputMode="numeric"
+          placeholder="PIN (4-8 digits)"
+          className="w-40 rounded-lg border border-border bg-background px-3 py-2 text-sm tracking-widest outline-none focus:border-foreground"
+        />
+        <button
+          type="submit"
+          disabled={busy}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-foreground px-4 py-2 text-sm font-semibold text-background hover:opacity-90 disabled:opacity-50"
+        >
+          <Plus className="h-4 w-4" />
+          Add
+        </button>
+      </form>
+      {msg && <p className="mt-2 text-xs text-muted-foreground">{msg}</p>}
+
+      <ul className="mt-4 divide-y divide-border rounded-xl border border-border">
+        {rows.map((r) => (
+          <li key={r.id} className="flex items-center gap-2 p-3">
+            <KeyRound className="h-4 w-4 text-muted-foreground" />
+            <span className="truncate text-sm font-medium">{r.name}</span>
+            <span className="ml-auto flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => void resetPin(r)}
+                className="rounded-md px-2 py-1 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                Reset PIN
+              </button>
+              <button
+                type="button"
+                onClick={() => void remove(r)}
+                className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                aria-label={`Remove ${r.name}`}
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </span>
+          </li>
+        ))}
+        {rows.length === 0 && (
+          <li className="p-3 text-sm text-muted-foreground">No PIN logins yet.</li>
+        )}
+      </ul>
     </section>
   );
 }

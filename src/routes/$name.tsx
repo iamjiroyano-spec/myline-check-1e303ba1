@@ -530,37 +530,7 @@ function SectionPage() {
     setEntry(group, item, occ, { status: cur === "OK" ? "" : "OK" });
   };
 
-  const markAllOK = () => {
-    setState((prev) => {
-      const entries = { ...prev.entries };
-      for (const ci of allCatItems) {
-        const k = entryKey(ci.group, ci.name, ci.occ);
-        entries[k] = {
-          op: entries[k]?.op ?? emptyEntry(),
-          mid: entries[k]?.mid ?? emptyEntry(),
-          cl: entries[k]?.cl ?? emptyEntry(),
-          [slot]: { status: "OK", note: entries[k]?.[slot]?.note ?? "" },
-        };
-      }
-      return { ...prev, entries };
-    });
-  };
 
-  const unmarkAll = () => {
-    setState((prev) => {
-      const entries = { ...prev.entries };
-      for (const ci of allCatItems) {
-        const k = entryKey(ci.group, ci.name, ci.occ);
-        entries[k] = {
-          op: entries[k]?.op ?? emptyEntry(),
-          mid: entries[k]?.mid ?? emptyEntry(),
-          cl: entries[k]?.cl ?? emptyEntry(),
-          [slot]: { status: "", note: "" },
-        };
-      }
-      return { ...prev, entries };
-    });
-  };
 
 
   const saveCheck = () => {
@@ -834,18 +804,6 @@ function SectionPage() {
                   className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-2 text-xs font-semibold hover:bg-accent"
                 >
                   <Edit3 className="h-3.5 w-3.5" /> Edit
-                </button>
-                <button
-                  onClick={markAllOK}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-50 px-3.5 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-100"
-                >
-                  <Check className="h-3.5 w-3.5" /> Mark All
-                </button>
-                <button
-                  onClick={unmarkAll}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-2 text-xs font-semibold hover:bg-accent"
-                >
-                  <X className="h-3.5 w-3.5" /> Unmark All
                 </button>
                 <button
                   onClick={saveCheck}

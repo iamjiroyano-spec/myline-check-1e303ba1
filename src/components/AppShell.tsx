@@ -1,4 +1,5 @@
 import { lsStore } from "@/lib/lsStore";
+import { getStaffSession, clearStaffSession } from "@/lib/staffSession";
 import { stationSlug } from "@/lib/slug";
 import { Link, useLocation } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
@@ -16,6 +17,7 @@ import {
   History,
   Settings,
   PackageCheck,
+  ClipboardCheck,
   ChevronLeft,
   Calendar,
   Clock,
@@ -186,7 +188,13 @@ function Sidebar({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loc.pathname]);
 
-  const RESERVED_PATHS = ["", "auth", "history", "receiving", "settings", "r", "s", "section"];
+  const [isStaff, setIsStaff] = useState(false);
+  useEffect(() => {
+    setIsStaff(!!getStaffSession());
+  }, []);
+
+  const RESERVED_PATHS = ["", "auth", "history", "receiving", "closing", "settings", "r", "s", "c", "section"];
+
   const firstSeg = loc.pathname.split("/")[1] ?? "";
   const sectionMatch = RESERVED_PATHS.includes(firstSeg) ? null : ([null, firstSeg] as const);
   let activeSection: string | null = sectionMatch?.[1] ?? null;
@@ -230,13 +238,21 @@ function Sidebar({
       </div>
 
       <nav className="px-3">
-        <NavItem to="/" icon={LayoutDashboard} label="Dashboard" active={loc.pathname === "/"} collapsed={collapsed} activeColor={activeDayColor} />
-        <NavItem to="/history" icon={History} label="History" active={loc.pathname === "/history"} collapsed={collapsed} activeColor={activeDayColor} />
+        {!isStaff && (
+          <>
+            <NavItem to="/" icon={LayoutDashboard} label="Dashboard" active={loc.pathname === "/"} collapsed={collapsed} activeColor={activeDayColor} />
+            <NavItem to="/history" icon={History} label="History" active={loc.pathname === "/history"} collapsed={collapsed} activeColor={activeDayColor} />
+          </>
+        )}
         <NavItem to="/receiving" icon={PackageCheck} label="Receiving" active={loc.pathname === "/receiving"} collapsed={collapsed} activeColor={activeDayColor} />
-        <NavItem to="/settings" icon={Settings} label="Settings" active={loc.pathname === "/settings"} collapsed={collapsed} activeColor={activeDayColor} />
+        <NavItem to="/closing" icon={ClipboardCheck} label="Closing Report" active={loc.pathname === "/closing"} collapsed={collapsed} activeColor={activeDayColor} />
+        {!isStaff && (
+          <NavItem to="/settings" icon={Settings} label="Settings" active={loc.pathname === "/settings"} collapsed={collapsed} activeColor={activeDayColor} />
+        )}
       </nav>
 
-      <div className="mt-4 flex-1 overflow-y-auto px-3 pb-6" data-tick={tick}>
+
+      <div className={`mt-4 flex-1 overflow-y-auto px-3 pb-6 ${isStaff ? "hidden" : ""}`} data-tick={tick}>
         {!collapsed && (
           <p className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-sidebar-foreground/60">
             Stations
@@ -295,6 +311,13 @@ function SignOutButton({ collapsed }: { collapsed: boolean }) {
   const [email, setEmail] = useState<string | null>(null);
   useEffect(() => {
     let active = true;
+    const staff = getStaffSession();
+    if (staff) {
+      setEmail(`${staff.name} (PIN access)`);
+      return () => {
+        active = false;
+      };
+    }
     import("@/integrations/supabase/client").then(({ supabase }) => {
       supabase.auth.getUser().then(({ data }) => {
         if (active) setEmail(data.user?.email ?? null);
@@ -305,10 +328,12 @@ function SignOutButton({ collapsed }: { collapsed: boolean }) {
     };
   }, []);
   const handle = async () => {
+    clearStaffSession();
     const { supabase } = await import("@/integrations/supabase/client");
     await supabase.auth.signOut();
     window.location.href = "/auth";
   };
+
   return (
     <div className="border-t border-sidebar-border px-3 py-3">
       {!collapsed && email && (
