@@ -1,6 +1,4 @@
 import { lsStore } from "@/lib/lsStore";
-import { compressImageFile } from "@/lib/image";
-
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AppShell, useShellState } from "@/components/AppShell";
@@ -274,25 +272,19 @@ function SectionPage() {
     } catch {}
   };
 
-  const addCommentPhoto = async (file: File) => {
-    const MAX = 15 * 1024 * 1024;
+  const addCommentPhoto = (file: File) => {
+    const MAX = 8 * 1024 * 1024;
     if (file.size > MAX) {
-      alert("Image too large (max 15MB).");
+      alert("Image too large (max 8MB).");
       return;
     }
-    const dataUrl = await compressImageFile(file);
-    if (dataUrl) {
-      setCommentPhotos((prev) => {
-        const next = [...prev, dataUrl];
-        try {
-          lsStore.setItem(commentPhotosKey, JSON.stringify(next));
-          window.dispatchEvent(new Event("linecheck:update"));
-        } catch {}
-        return next;
-      });
-    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = typeof reader.result === "string" ? reader.result : "";
+      if (dataUrl) persistCommentPhotos([...commentPhotos, dataUrl]);
+    };
+    reader.readAsDataURL(file);
   };
-
 
 
   const setTemp = (group: string, value: string) => {
@@ -798,30 +790,10 @@ function SectionPage() {
             return [cat, visible] as const;
           })
           .filter(([, visible]) => visible.length > 0)
-          .map(([cat, items], catIdx) => {
-            const palette = [
-              "oklch(0.65 0.18 250)",
-              "oklch(0.65 0.18 145)",
-              "oklch(0.70 0.18 55)",
-              "oklch(0.65 0.20 330)",
-              "oklch(0.65 0.15 195)",
-              "oklch(0.65 0.20 25)",
-              "oklch(0.65 0.18 285)",
-            ];
-            const accent = palette[catIdx % palette.length];
-            const bg = `color-mix(in oklch, ${accent} 10%, var(--card))`;
-            const headingColor = `color-mix(in oklch, ${accent} 65%, var(--foreground))`;
-            return (
-            <section
-              key={cat.group}
-              className="mt-6 rounded-2xl border border-border p-3 category-block"
-              style={{
-                background: bg,
-                borderLeft: `4px solid ${accent}`,
-              }}
-            >
+          .map(([cat, items]) => (
+            <section key={cat.group} className="mt-6">
               <div className="mb-2 flex items-center justify-between px-1">
-                <h3 className="text-sm font-bold uppercase tracking-[0.14em]" style={{ color: headingColor }}>
+                <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
                   {cat.group}
                 </h3>
                 {cat.temp && (
@@ -902,7 +874,7 @@ function SectionPage() {
                           className="h-full rounded-full transition-all"
                           style={{
                             width: `${itemPct}%`,
-                            background: `linear-gradient(90deg, hsl(${50 - itemPct * 0.22} 95% 55%), hsl(${45 - itemPct * 0.22} 95% 50%))`,
+                            background: `linear-gradient(90deg, hsl(${15 + itemPct * 0.35} 92% 45%), hsl(${20 + itemPct * 0.4} 96% 58%))`,
                           }}
                         />
                       </div>
@@ -945,19 +917,22 @@ function SectionPage() {
                           accept="image/*"
                           capture="environment"
                           className="hidden"
-                          onChange={async (ev) => {
+                          onChange={(ev) => {
                             const file = ev.target.files?.[0];
                             ev.target.value = "";
                             if (!file) return;
-                            const MAX = 15 * 1024 * 1024;
+                            const MAX = 8 * 1024 * 1024;
                             if (file.size > MAX) {
-                              alert("Image too large (max 15MB).");
+                              alert("Image too large (max 8MB).");
                               return;
                             }
-                            const dataUrl = await compressImageFile(file);
-                            if (dataUrl) setEntry(cat.group, item.name, occ, { photo: dataUrl });
+                            const reader = new FileReader();
+                            reader.onload = () => {
+                              const dataUrl = typeof reader.result === "string" ? reader.result : "";
+                              if (dataUrl) setEntry(cat.group, item.name, occ, { photo: dataUrl });
+                            };
+                            reader.readAsDataURL(file);
                           }}
-
                         />
                       </label>
                       {e?.photo && (
@@ -1001,7 +976,7 @@ function SectionPage() {
 
               </div>
             </section>
-          );})}
+          ))}
 
       {!editMode && (
         <section className="mt-8">
@@ -1034,44 +1009,40 @@ function SectionPage() {
               </span>
             </div>
           </div>
-          <div className="rounded-md border border-input bg-background focus-within:border-foreground/40">
-            <AutoGrowTextarea
-              value={comment}
-              onChange={onCommentChange}
-              placeholder={`Add a comment or feedback for ${name}…`}
-              className="w-full resize-none border-0 bg-transparent px-3 py-2 text-sm outline-none focus:outline-none focus:ring-0"
-            />
-            {commentPhotos.length > 0 && (
-              <div className="flex flex-wrap gap-2 border-t border-border/60 px-3 py-2">
-                {commentPhotos.map((photo, idx) => (
-                  <div key={idx} className="relative">
-                    <button
-                      type="button"
-                      onClick={() => setCommentViewer({ index: idx, photo })}
-                      className="grid h-16 w-16 place-items-center overflow-hidden rounded-md border border-border"
-                      title="View reference photo"
-                      aria-label={`View reference photo ${idx + 1}`}
-                    >
-                      <img src={photo} alt="" className="h-full w-full object-cover" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (confirm("Remove this reference photo?")) {
-                          persistCommentPhotos(commentPhotos.filter((_, i) => i !== idx));
-                        }
-                      }}
-                      className="absolute -right-1.5 -top-1.5 grid h-5 w-5 place-items-center rounded-full border border-border bg-background text-muted-foreground shadow hover:text-foreground"
-                      aria-label={`Remove reference photo ${idx + 1}`}
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
+          <AutoGrowTextarea
+            value={comment}
+            onChange={onCommentChange}
+            placeholder={`Add a comment or feedback for ${name}…`}
+          />
+          {commentPhotos.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-2 px-1">
+              {commentPhotos.map((photo, idx) => (
+                <div key={idx} className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setCommentViewer({ index: idx, photo })}
+                    className="grid h-16 w-16 place-items-center overflow-hidden rounded-md border border-border"
+                    title="View reference photo"
+                    aria-label={`View reference photo ${idx + 1}`}
+                  >
+                    <img src={photo} alt="" className="h-full w-full object-cover" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (confirm("Remove this reference photo?")) {
+                        persistCommentPhotos(commentPhotos.filter((_, i) => i !== idx));
+                      }
+                    }}
+                    className="absolute -right-1.5 -top-1.5 grid h-5 w-5 place-items-center rounded-full border border-border bg-background text-muted-foreground shadow hover:text-foreground"
+                    aria-label={`Remove reference photo ${idx + 1}`}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </section>
       )}
       {commentViewer && (
@@ -1162,22 +1133,25 @@ function SectionPage() {
                 accept="image/*"
                 capture="environment"
                 className="hidden"
-                onChange={async (ev) => {
+                onChange={(ev) => {
                   const file = ev.target.files?.[0];
                   ev.target.value = "";
                   if (!file || !viewer) return;
-                  const MAX = 15 * 1024 * 1024;
+                  const MAX = 8 * 1024 * 1024;
                   if (file.size > MAX) {
-                    alert("Image too large (max 15MB).");
+                    alert("Image too large (max 8MB).");
                     return;
                   }
-                  const dataUrl = await compressImageFile(file);
-                  if (dataUrl) {
-                    setEntry(viewer.group, viewer.name, viewer.occ, { photo: dataUrl });
-                    setViewer({ ...viewer, photo: dataUrl });
-                  }
+                  const reader = new FileReader();
+                  reader.onload = () => {
+                    const dataUrl = typeof reader.result === "string" ? reader.result : "";
+                    if (dataUrl) {
+                      setEntry(viewer.group, viewer.name, viewer.occ, { photo: dataUrl });
+                      setViewer({ ...viewer, photo: dataUrl });
+                    }
+                  };
+                  reader.readAsDataURL(file);
                 }}
-
               />
               <button
                 type="button"
@@ -1214,12 +1188,10 @@ function AutoGrowTextarea({
   value,
   onChange,
   placeholder,
-  className,
 }: {
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
-  className?: string;
 }) {
   const ref = useRef<HTMLTextAreaElement | null>(null);
   useEffect(() => {
@@ -1235,14 +1207,10 @@ function AutoGrowTextarea({
       onChange={(ev) => onChange(ev.target.value)}
       placeholder={placeholder}
       rows={3}
-      className={
-        className ??
-        "w-full resize-none overflow-hidden rounded-2xl border border-border bg-card px-3 py-2.5 text-sm text-foreground outline-none transition focus:border-foreground/40"
-      }
+      className="w-full resize-none overflow-hidden rounded-2xl border border-border bg-card px-3 py-2.5 text-sm text-foreground outline-none transition focus:border-foreground/40"
     />
   );
 }
-
 
 // ---------- Drag-and-drop edit UI ----------
 

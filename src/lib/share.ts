@@ -57,12 +57,10 @@ export const sharedShiftPayloadSchema = z.object({
         temps: z.record(z.string(), z.string()).catch({}),
         tempUnit: z.enum(["F", "C"]).catch("F"),
         comment: z.string().catch(""),
-        commentPhotos: z.array(z.string()).catch([]),
       }),
     )
     .catch([]),
 });
-
 
 export type SharedShiftPayload = z.infer<typeof sharedShiftPayloadSchema>;
 
@@ -77,16 +75,6 @@ function buildPayload(date: string, slot: Slot): SharedShiftPayload {
     } catch {}
     const comment =
       lsStore.getItem(`linecheck:section-comment:${s.name}:${date}:${slot}`) || "";
-    let commentPhotos: string[] = [];
-    try {
-      const raw = lsStore.getItem(
-        `linecheck:section-comment-photos:${s.name}:${date}:${slot}`,
-      );
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) commentPhotos = parsed.filter((x) => typeof x === "string");
-      }
-    } catch {}
     return {
       name: s.name,
       state: loadSection(s.name, date),
@@ -94,10 +82,8 @@ function buildPayload(date: string, slot: Slot): SharedShiftPayload {
       temps,
       tempUnit: (tempUnit === "C" ? "C" : "F") as "F" | "C",
       comment,
-      commentPhotos,
     };
   });
-
   const brand_name = lsStore.getItem("linecheck:settings:brand:name") || "LUMA";
   return {
     date,

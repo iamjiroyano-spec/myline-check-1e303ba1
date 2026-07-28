@@ -100,9 +100,7 @@ function SharedView() {
       temps: { group: string; value: string }[];
       tempUnit: "F" | "C";
       comment: string;
-      commentPhotos: string[];
     }[] = [];
-
 
     for (const s of data.payload.sections) {
       const st = s.state;
@@ -165,10 +163,7 @@ function SharedView() {
         .filter(([, v]) => v && String(v).trim().length > 0)
         .map(([group, value]) => ({ group, value: String(value) }));
       const comment = (s.comment || "").trim();
-      const commentPhotos = Array.isArray(s.commentPhotos)
-        ? s.commentPhotos.filter((p) => typeof p === "string" && p.length > 0)
-        : [];
-      if (allItems.length || temps.length || comment || commentPhotos.length) {
+      if (allItems.length || temps.length || comment) {
         out.push({
           section: s.name,
           categories,
@@ -179,10 +174,8 @@ function SharedView() {
           temps,
           tempUnit: s.tempUnit ?? "F",
           comment,
-          commentPhotos,
         });
       }
-
     }
     return out;
   }, [data]);
@@ -417,37 +410,14 @@ function SharedView() {
                       )}
 
 
-                      {(r.comment || r.commentPhotos.length > 0) && (
+                      {r.comment && (
                         <div className="mt-3 rounded-xl border border-border bg-muted/30 p-3">
                           <p className="mb-1 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
                             <MessageSquare className="h-3.5 w-3.5" /> Notes
                           </p>
-                          {r.comment && (
-                            <p className="whitespace-pre-wrap text-sm">{r.comment}</p>
-                          )}
-                          {r.commentPhotos.length > 0 && (
-                            <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
-                              {r.commentPhotos.map((src, i) => (
-                                <a
-                                  key={i}
-                                  href={src}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="block overflow-hidden rounded-lg border border-border"
-                                >
-                                  <img
-                                    src={src}
-                                    alt={`${r.section} reference ${i + 1}`}
-                                    className="h-32 w-full object-cover"
-                                    loading="lazy"
-                                  />
-                                </a>
-                              ))}
-                            </div>
-                          )}
+                          <p className="whitespace-pre-wrap text-sm">{r.comment}</p>
                         </div>
                       )}
-
                     </div>
                   )}
                 </section>
