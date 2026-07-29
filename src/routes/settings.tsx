@@ -2,7 +2,7 @@ import { lsStore } from "@/lib/lsStore";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AppShell, useShellState, SECTION_ICONS } from "@/components/AppShell";
-import { SECTIONS, STAFF, STATUSES, getShifts, saveShifts, type Slot, type ShiftDef } from "@/lib/lineCheck";
+import { SECTIONS, STAFF, STATUSES, getShifts, saveShifts, getStatusColors, saveStatusColors, type Slot, type ShiftDef } from "@/lib/lineCheck";
 import { supabase } from "@/integrations/supabase/client";
 import { ADMIN_EMAIL, isAdminEmail } from "@/lib/allowlist";
 import { hashPinBrowser } from "@/lib/staffSession";
@@ -853,16 +853,25 @@ function PeoplePanel({
 
 function StatusPanel() {
   const [statuses, setStatuses] = useState<string[]>(() => loadJSON(STATUSES_KEY, STATUSES));
+  const [colors, setColors] = useState<Record<string, "green" | "red">>(() => getStatusColors());
   const [name, setName] = useState("");
 
   useEffect(() => {
     lsStore.setItem(STATUSES_KEY, JSON.stringify(statuses));
   }, [statuses]);
 
+  const setColor = (status: string, color: "green" | "red") => {
+    const next = { ...colors, [status]: color };
+    setColors(next);
+    saveStatusColors(next);
+  };
+
   const add = () => {
     const n = name.trim();
     if (!n) return;
-    setStatuses((s) => [n.toUpperCase(), ...s]);
+    const up = n.toUpperCase();
+    setStatuses((s) => [up, ...s]);
+    setColor(up, "green");
     setName("");
   };
 
@@ -884,27 +893,63 @@ function StatusPanel() {
         </button>
       </div>
 
+      <p className="mb-3 text-xs text-muted-foreground">
+        Green = okay. Red = flagged and recorded on the dashboard.
+      </p>
+
       <ul className="space-y-2">
-        {statuses.map((s, i) => (
-          <li
-            key={s + i}
-            className="flex items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3 shadow-sm"
-          >
-            <Tag className="h-4 w-4 text-muted-foreground" />
-            <span className="font-semibold tracking-tight">{s}</span>
-            <button
-              onClick={() => setStatuses((arr) => arr.filter((_, j) => j !== i))}
-              className="ml-auto grid h-7 w-7 place-items-center rounded-md text-muted-foreground hover:bg-danger-soft hover:text-danger"
-              aria-label="Delete"
+        {statuses.map((s, i) => {
+          const color = colors[s] ?? "green";
+          return (
+            <li
+              key={s + i}
+              className={`flex flex-wrap items-center gap-3 rounded-2xl border bg-card px-4 py-3 shadow-sm ${
+                color === "red" ? "border-danger/40" : "border-success/40"
+              }`}
             >
-              <Trash2 className="h-4 w-4" />
-            </button>
-          </li>
-        ))}
+              <span
+                className={`h-3 w-3 shrink-0 rounded-full ${
+                  color === "red" ? "bg-danger" : "bg-success"
+                }`}
+              />
+              <span className="font-semibold tracking-tight">{s}</span>
+              <div className="ml-auto flex items-center gap-1 rounded-full border border-border p-0.5">
+                <button
+                  onClick={() => setColor(s, "green")}
+                  className={`rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wider transition ${
+                    color === "green"
+                      ? "bg-success text-background"
+                      : "text-muted-foreground hover:bg-accent"
+                  }`}
+                >
+                  Green
+                </button>
+                <button
+                  onClick={() => setColor(s, "red")}
+                  className={`rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wider transition ${
+                    color === "red"
+                      ? "bg-danger text-background"
+                      : "text-muted-foreground hover:bg-accent"
+                  }`}
+                >
+                  Red
+                </button>
+              </div>
+              <button
+                onClick={() => setStatuses((arr) => arr.filter((_, j) => j !== i))}
+                className="grid h-7 w-7 place-items-center rounded-md text-muted-foreground hover:bg-danger-soft hover:text-danger"
+                aria-label="Delete"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
 }
+
 
 /* ============= SHIFTS ============= */
 

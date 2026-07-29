@@ -193,11 +193,12 @@ function Dashboard() {
                 </span>
                 <span
                   className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
-                    STATUS_BADGE[row.status] ?? "bg-muted text-foreground"
+                    STATUS_BADGE[row.status] ?? "bg-danger-soft text-danger"
                   }`}
                 >
                   {row.status}
                 </span>
+
                 <ArrowRight className="h-4 w-4 text-muted-foreground" />
               </>
             );
