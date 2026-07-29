@@ -554,7 +554,28 @@ function SectionPage() {
   };
 
   const markAllOK = () => bulkSet("OK");
-  const unmarkAll = () => bulkSet("");
+
+  // Reset guard: a station may only be unmarked once per shift + manager combo.
+  // Picking a new shift or a new team member unlocks it again.
+  const resetCtxKey = `linecheck:reset-ctx:${name}:${shell.date}`;
+  const resetCtx = `${slot}|${shell.member}`;
+  const lastResetCtx = (() => {
+    try {
+      return lsStore.getItem(resetCtxKey) || "";
+    } catch {
+      return "";
+    }
+  })();
+  const canReset = lastResetCtx !== resetCtx;
+
+  const unmarkAll = () => {
+    if (!canReset) return;
+    bulkSet("");
+    try {
+      lsStore.setItem(resetCtxKey, resetCtx);
+    } catch {}
+  };
+
 
 
   const saveCheck = () => {
