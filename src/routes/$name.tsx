@@ -530,7 +530,31 @@ function SectionPage() {
     setEntry(group, item, occ, { status: cur === "OK" ? "" : "OK" });
   };
 
+  /** Apply a status to every item in the station, using the freshest stored
+   *  snapshot so a racing sync pull can't clobber the bulk change. */
+  const bulkSet = (status: string) => {
+    const fresh = loadSection(name, shell.date);
+    const entries: SectionState["entries"] = { ...fresh.entries };
+    for (const ci of allCatItems) {
+      const k = entryKey(ci.group, ci.name, ci.occ);
+      const prev = entries[k] ?? {};
+      entries[k] = {
+        ...prev,
+        [slot]: { ...(prev[slot] ?? emptyEntry()), status },
+      } as SectionState["entries"][string];
+    }
+    const next: SectionState = { ...fresh, entries };
+    setState(next);
+    try {
+      lsStore.setItem(key, JSON.stringify(next));
+      window.dispatchEvent(new Event("linecheck:update"));
+    } catch {}
+    setSavedFlash(true);
+    setTimeout(() => setSavedFlash(false), 1400);
+  };
 
+  const markAllOK = () => bulkSet("OK");
+  const unmarkAll = () => bulkSet("");
 
 
   const saveCheck = () => {
@@ -800,6 +824,18 @@ function SectionPage() {
                   <Filter className="h-3.5 w-3.5" /> {flaggedOnly ? "Flagged Only" : "All Items"}
                 </button>
                 <button
+                  onClick={markAllOK}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-2 text-xs font-semibold hover:bg-accent"
+                >
+                  <Check className="h-3.5 w-3.5" /> Mark All OK
+                </button>
+                <button
+                  onClick={unmarkAll}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-2 text-xs font-semibold hover:bg-accent"
+                >
+                  <X className="h-3.5 w-3.5" /> Unmark All
+                </button>
+                <button
                   onClick={enterEdit}
                   className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-2 text-xs font-semibold hover:bg-accent"
                 >
@@ -813,6 +849,7 @@ function SectionPage() {
                 >
                   <Save className="h-3.5 w-3.5" /> {savedFlash ? "Saved!" : "Save Check"}
                 </button>
+
 
               </>
             )}
