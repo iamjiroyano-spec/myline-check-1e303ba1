@@ -554,7 +554,28 @@ function SectionPage() {
   };
 
   const markAllOK = () => bulkSet("OK");
-  const unmarkAll = () => bulkSet("");
+
+  // Reset guard: a station may only be unmarked once per shift + manager combo.
+  // Picking a new shift or a new team member unlocks it again.
+  const resetCtxKey = `linecheck:reset-ctx:${name}:${shell.date}`;
+  const resetCtx = `${slot}|${shell.member}`;
+  const lastResetCtx = (() => {
+    try {
+      return lsStore.getItem(resetCtxKey) || "";
+    } catch {
+      return "";
+    }
+  })();
+  const canReset = lastResetCtx !== resetCtx;
+
+  const unmarkAll = () => {
+    if (!canReset) return;
+    bulkSet("");
+    try {
+      lsStore.setItem(resetCtxKey, resetCtx);
+    } catch {}
+  };
+
 
 
   const saveCheck = () => {
@@ -831,10 +852,17 @@ function SectionPage() {
                 </button>
                 <button
                   onClick={unmarkAll}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-2 text-xs font-semibold hover:bg-accent"
+                  disabled={!canReset}
+                  title={
+                    canReset
+                      ? undefined
+                      : "Already reset for this shift — select a new shift or team member first"
+                  }
+                  className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-2 text-xs font-semibold hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <X className="h-3.5 w-3.5" /> Unmark All
                 </button>
+
                 <button
                   onClick={enterEdit}
                   className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-2 text-xs font-semibold hover:bg-accent"
