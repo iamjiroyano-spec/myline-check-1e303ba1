@@ -824,6 +824,18 @@ function SectionPage() {
                   <Filter className="h-3.5 w-3.5" /> {flaggedOnly ? "Flagged Only" : "All Items"}
                 </button>
                 <button
+                  onClick={markAllOK}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-2 text-xs font-semibold hover:bg-accent"
+                >
+                  <Check className="h-3.5 w-3.5" /> Mark All OK
+                </button>
+                <button
+                  onClick={unmarkAll}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-2 text-xs font-semibold hover:bg-accent"
+                >
+                  <X className="h-3.5 w-3.5" /> Unmark All
+                </button>
+                <button
                   onClick={enterEdit}
                   className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-2 text-xs font-semibold hover:bg-accent"
                 >
@@ -837,6 +849,7 @@ function SectionPage() {
                 >
                   <Save className="h-3.5 w-3.5" /> {savedFlash ? "Saved!" : "Save Check"}
                 </button>
+
 
               </>
             )}
