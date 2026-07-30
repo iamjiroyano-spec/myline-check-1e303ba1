@@ -345,6 +345,39 @@ function SectionPage() {
     window.dispatchEvent(new Event("linecheck:update"));
   };
 
+  // Single drag handler for view mode: reorders categories ("cat:<group>" ids)
+  // or items within one category ("<group>::<name>#<occ>" ids).
+  const handleViewDragEnd = (ev: DragEndEvent) => {
+    const { active, over } = ev;
+    if (!over || active.id === over.id) return;
+    const a = String(active.id);
+    const o = String(over.id);
+    if (a.startsWith("cat:")) {
+      if (!o.startsWith("cat:")) return;
+      const from = struct.findIndex((c) => `cat:${c.group}` === a);
+      const to = struct.findIndex((c) => `cat:${c.group}` === o);
+      if (from < 0 || to < 0) return;
+      persistStruct(arrayMove(struct, from, to));
+      return;
+    }
+    const group = a.slice(0, a.indexOf("::"));
+    if (o.slice(0, o.indexOf("::")) !== group) return;
+    const cat = struct.find((c) => c.group === group);
+    if (!cat) return;
+    const seen = new Map<string, number>();
+    const ids = cat.items.map((it) => {
+      const occ = seen.get(it.name) ?? 0;
+      seen.set(it.name, occ + 1);
+      return `${group}::${it.name}#${occ}`;
+    });
+    const from = ids.indexOf(a);
+    const to = ids.indexOf(o);
+    if (from < 0 || to < 0) return;
+    persistStruct(
+      struct.map((c) => (c.group === group ? { ...c, items: arrayMove(c.items, from, to) } : c)),
+    );
+  };
+
   // Quick action: move an item from one category to another (view mode),
   // carrying its saved statuses/notes/photos along with it.
   const quickMoveItem = (fromGroup: string, itemIdx: number, toGroup: string) => {
