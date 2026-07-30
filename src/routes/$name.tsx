@@ -23,7 +23,7 @@ import {
   type SectionState,
   type Slot,
 } from "@/lib/lineCheck";
-import { Camera, Check, ChevronDown, FolderInput, ChevronUp, Download, Edit3, Filter, GripVertical, Save, Thermometer, Plus, Trash2, Upload, X } from "lucide-react";
+import { Camera, Check, ChevronDown, FolderInput, ChevronUp, Download, Edit3, Filter, GripVertical, Image as ImageIcon, Save, Thermometer, Plus, Trash2, Upload, X } from "lucide-react";
 import { z } from "zod";
 import {
   DndContext,
@@ -204,6 +204,7 @@ function SectionPage() {
   const [flaggedOnly, setFlaggedOnly] = useState(false);
   const [viewer, setViewer] = useState<{ group: string; name: string; occ: number; photo: string } | null>(null);
   const viewerFileRef = useRef<HTMLInputElement | null>(null);
+  const viewerGalleryRef = useRef<HTMLInputElement | null>(null);
   const [temps, setTemps] = useState<Record<string, string>>({});
   const [tempUnit, setTempUnitState] = useState<"F" | "C">(() => {
     try {
@@ -1147,7 +1148,7 @@ function SectionPage() {
                       <label
                         className="grid h-7 w-7 cursor-pointer place-items-center rounded-full text-muted-foreground hover:bg-accent"
                         aria-label={`Capture photo for ${item.name}`}
-                        title={e?.photo ? "Replace photo" : "Capture photo"}
+                        title={e?.photo ? "Replace photo (camera)" : "Capture photo (camera)"}
                       >
                         <Camera className={`h-4 w-4 ${e?.photo ? "text-foreground" : ""}`} />
                         <input
@@ -1170,6 +1171,31 @@ function SectionPage() {
 
                         />
                       </label>
+                      <label
+                        className="grid h-7 w-7 cursor-pointer place-items-center rounded-full text-muted-foreground hover:bg-accent"
+                        aria-label={`Choose photo from gallery for ${item.name}`}
+                        title="Choose from gallery"
+                      >
+                        <ImageIcon className="h-4 w-4" />
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={async (ev) => {
+                            const file = ev.target.files?.[0];
+                            ev.target.value = "";
+                            if (!file) return;
+                            const MAX = 15 * 1024 * 1024;
+                            if (file.size > MAX) {
+                              alert("Image too large (max 15MB).");
+                              return;
+                            }
+                            const dataUrl = await compressImageFile(file);
+                            if (dataUrl) setEntry(cat.group, item.name, occ, { photo: dataUrl });
+                          }}
+                        />
+                      </label>
+
                       {e?.photo && (
                         <button
                           type="button"
@@ -1269,11 +1295,11 @@ function SectionPage() {
             <div className="flex items-center gap-2">
               <label
                 className="inline-flex h-7 cursor-pointer items-center gap-1 rounded-md border border-border bg-background px-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground hover:bg-accent hover:text-foreground"
-                title="Attach reference image"
-                aria-label="Attach reference image to station comment"
+                title="Take a photo with the camera"
+                aria-label="Capture reference image for station comment"
               >
                 <Camera className="h-3.5 w-3.5" />
-                <span>Add Photo</span>
+                <span>Camera</span>
                 <input
                   type="file"
                   accept="image/*"
@@ -1286,6 +1312,26 @@ function SectionPage() {
                   }}
                 />
               </label>
+              <label
+                className="inline-flex h-7 cursor-pointer items-center gap-1 rounded-md border border-border bg-background px-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground hover:bg-accent hover:text-foreground"
+                title="Choose images from gallery"
+                aria-label="Choose reference images from gallery"
+              >
+                <ImageIcon className="h-3.5 w-3.5" />
+                <span>Gallery</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={(ev) => {
+                    const files = Array.from(ev.target.files ?? []);
+                    ev.target.value = "";
+                    files.forEach((f) => addCommentPhoto(f));
+                  }}
+                />
+              </label>
+
               <span className="text-[10px] text-muted-foreground">
                 Auto-saved · {slot.toUpperCase()}
               </span>
@@ -1436,14 +1482,44 @@ function SectionPage() {
                 }}
 
               />
+              <input
+                ref={viewerGalleryRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={async (ev) => {
+                  const file = ev.target.files?.[0];
+                  ev.target.value = "";
+                  if (!file || !viewer) return;
+                  const MAX = 15 * 1024 * 1024;
+                  if (file.size > MAX) {
+                    alert("Image too large (max 15MB).");
+                    return;
+                  }
+                  const dataUrl = await compressImageFile(file);
+                  if (dataUrl) {
+                    setEntry(viewer.group, viewer.name, viewer.occ, { photo: dataUrl });
+                    setViewer({ ...viewer, photo: dataUrl });
+                  }
+                }}
+              />
               <button
                 type="button"
                 onClick={() => viewerFileRef.current?.click()}
                 className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent"
               >
                 <Camera className="h-3.5 w-3.5" />
-                Retake / Replace
+                Retake
               </button>
+              <button
+                type="button"
+                onClick={() => viewerGalleryRef.current?.click()}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent"
+              >
+                <ImageIcon className="h-3.5 w-3.5" />
+                Gallery
+              </button>
+
               <button
                 type="button"
                 onClick={() => {
