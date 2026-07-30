@@ -204,6 +204,7 @@ function SectionPage() {
   const [flaggedOnly, setFlaggedOnly] = useState(false);
   const [viewer, setViewer] = useState<{ group: string; name: string; occ: number; photo: string } | null>(null);
   const viewerFileRef = useRef<HTMLInputElement | null>(null);
+  const viewerGalleryRef = useRef<HTMLInputElement | null>(null);
   const [temps, setTemps] = useState<Record<string, string>>({});
   const [tempUnit, setTempUnitState] = useState<"F" | "C">(() => {
     try {
