@@ -967,8 +967,8 @@ function SectionPage() {
 
 
       {/* Groups (view mode) */}
-      {!editMode &&
-        struct
+      {!editMode && (() => {
+        const visibleCats = struct
           .map((cat) => {
             const seen = new Map<string, number>();
             const withOcc = cat.items.map((item, idx) => {
@@ -983,7 +983,18 @@ function SectionPage() {
             });
             return [cat, visible] as const;
           })
-          .filter(([, visible]) => visible.length > 0)
+          .filter(([, visible]) => visible.length > 0);
+        return (
+          <DndContext
+            sensors={viewSensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleViewDragEnd}
+          >
+            <SortableContext
+              items={visibleCats.map(([cat]) => `cat:${cat.group}`)}
+              strategy={verticalListSortingStrategy}
+            >
+        {visibleCats
           .map(([cat, items], catIdx) => {
             const palette = [
               "oklch(0.65 0.18 250)",
