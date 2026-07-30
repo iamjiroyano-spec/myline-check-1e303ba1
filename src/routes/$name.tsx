@@ -1295,11 +1295,11 @@ function SectionPage() {
             <div className="flex items-center gap-2">
               <label
                 className="inline-flex h-7 cursor-pointer items-center gap-1 rounded-md border border-border bg-background px-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground hover:bg-accent hover:text-foreground"
-                title="Attach reference image"
-                aria-label="Attach reference image to station comment"
+                title="Take a photo with the camera"
+                aria-label="Capture reference image for station comment"
               >
                 <Camera className="h-3.5 w-3.5" />
-                <span>Add Photo</span>
+                <span>Camera</span>
                 <input
                   type="file"
                   accept="image/*"
@@ -1312,6 +1312,26 @@ function SectionPage() {
                   }}
                 />
               </label>
+              <label
+                className="inline-flex h-7 cursor-pointer items-center gap-1 rounded-md border border-border bg-background px-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground hover:bg-accent hover:text-foreground"
+                title="Choose images from gallery"
+                aria-label="Choose reference images from gallery"
+              >
+                <ImageIcon className="h-3.5 w-3.5" />
+                <span>Gallery</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={(ev) => {
+                    const files = Array.from(ev.target.files ?? []);
+                    ev.target.value = "";
+                    files.forEach((f) => addCommentPhoto(f));
+                  }}
+                />
+              </label>
+
               <span className="text-[10px] text-muted-foreground">
                 Auto-saved · {slot.toUpperCase()}
               </span>
