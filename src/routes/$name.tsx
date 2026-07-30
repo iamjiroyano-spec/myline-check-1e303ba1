@@ -1040,11 +1040,6 @@ function SectionPage() {
                   items={items.map(({ item, occ }) => `${cat.group}::${item.name}#${occ}`)}
                   strategy={verticalListSortingStrategy}
                 >
-
-                <SortableContext
-                  items={items.map(({ item, occ }) => `${item.name}#${occ}`)}
-                  strategy={verticalListSortingStrategy}
-                >
               <div className="space-y-2">
                 {items.map(({ item, occ, idx }) => {
                   const e = readEntry(state, cat.group, item.name, slot, occ);
