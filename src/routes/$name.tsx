@@ -1036,22 +1036,11 @@ function SectionPage() {
                 )}
               </div>
 
-              <DndContext
-                sensors={viewSensors}
-                collisionDetection={closestCenter}
-                onDragEnd={(ev: DragEndEvent) => {
-                  const { active, over } = ev;
-                  if (!over || active.id === over.id) return;
-                  const from = items.find((v) => `${v.item.name}#${v.occ}` === active.id)?.idx;
-                  const to = items.find((v) => `${v.item.name}#${v.occ}` === over.id)?.idx;
-                  if (from == null || to == null) return;
-                  persistStruct(
-                    struct.map((c) =>
-                      c.group === cat.group ? { ...c, items: arrayMove(c.items, from, to) } : c,
-                    ),
-                  );
-                }}
-              >
+                <SortableContext
+                  items={items.map(({ item, occ }) => `${cat.group}::${item.name}#${occ}`)}
+                  strategy={verticalListSortingStrategy}
+                >
+
                 <SortableContext
                   items={items.map(({ item, occ }) => `${item.name}#${occ}`)}
                   strategy={verticalListSortingStrategy}
