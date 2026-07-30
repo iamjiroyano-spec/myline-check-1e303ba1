@@ -1147,32 +1147,6 @@ function SectionPage() {
 
                       <label
                         className="grid h-7 w-7 cursor-pointer place-items-center rounded-full text-muted-foreground hover:bg-accent"
-                        aria-label={`Capture photo for ${item.name}`}
-                        title={e?.photo ? "Replace photo (camera)" : "Capture photo (camera)"}
-                      >
-                        <Camera className={`h-4 w-4 ${e?.photo ? "text-foreground" : ""}`} />
-                        <input
-                          type="file"
-                          accept="image/*"
-                          capture="environment"
-                          className="hidden"
-                          onChange={async (ev) => {
-                            const file = ev.target.files?.[0];
-                            ev.target.value = "";
-                            if (!file) return;
-                            const MAX = 15 * 1024 * 1024;
-                            if (file.size > MAX) {
-                              alert("Image too large (max 15MB).");
-                              return;
-                            }
-                            const dataUrl = await compressImageFile(file);
-                            if (dataUrl) setEntry(cat.group, item.name, occ, { photo: dataUrl });
-                          }}
-
-                        />
-                      </label>
-                      <label
-                        className="grid h-7 w-7 cursor-pointer place-items-center rounded-full text-muted-foreground hover:bg-accent"
                         aria-label={`Choose photo from gallery for ${item.name}`}
                         title="Choose from gallery"
                       >
