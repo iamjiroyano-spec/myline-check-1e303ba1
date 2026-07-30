@@ -1482,14 +1482,44 @@ function SectionPage() {
                 }}
 
               />
+              <input
+                ref={viewerGalleryRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={async (ev) => {
+                  const file = ev.target.files?.[0];
+                  ev.target.value = "";
+                  if (!file || !viewer) return;
+                  const MAX = 15 * 1024 * 1024;
+                  if (file.size > MAX) {
+                    alert("Image too large (max 15MB).");
+                    return;
+                  }
+                  const dataUrl = await compressImageFile(file);
+                  if (dataUrl) {
+                    setEntry(viewer.group, viewer.name, viewer.occ, { photo: dataUrl });
+                    setViewer({ ...viewer, photo: dataUrl });
+                  }
+                }}
+              />
               <button
                 type="button"
                 onClick={() => viewerFileRef.current?.click()}
                 className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent"
               >
                 <Camera className="h-3.5 w-3.5" />
-                Retake / Replace
+                Retake
               </button>
+              <button
+                type="button"
+                onClick={() => viewerGalleryRef.current?.click()}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent"
+              >
+                <ImageIcon className="h-3.5 w-3.5" />
+                Gallery
+              </button>
+
               <button
                 type="button"
                 onClick={() => {
