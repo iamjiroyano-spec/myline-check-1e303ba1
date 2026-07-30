@@ -998,18 +998,23 @@ function SectionPage() {
             const bg = `color-mix(in oklch, ${accent} 10%, var(--card))`;
             const headingColor = `color-mix(in oklch, ${accent} 65%, var(--foreground))`;
             return (
-            <section
+            <SortableSection
               key={cat.group}
+              id={`cat:${cat.group}`}
               className="mt-6 rounded-2xl border border-border p-3 category-block"
               style={{
                 background: bg,
                 borderLeft: `4px solid ${accent}`,
               }}
             >
+              {(catHandle) => (<>
               <div className="mb-2 flex flex-wrap items-center justify-between gap-2 px-1">
-                <h3 className="text-sm font-bold uppercase tracking-[0.14em]" style={{ color: headingColor }}>
-                  {cat.group}
-                </h3>
+                <div className="flex items-center gap-1.5">
+                  {catHandle}
+                  <h3 className="text-sm font-bold uppercase tracking-[0.14em]" style={{ color: headingColor }}>
+                    {cat.group}
+                  </h3>
+                </div>
                 {cat.temp && (
                   <div className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
                     <Thermometer className="h-3 w-3 text-sky-500" />
