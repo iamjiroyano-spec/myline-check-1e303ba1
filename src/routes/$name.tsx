@@ -1051,8 +1051,8 @@ function SectionPage() {
                   const noteMissing = flagged && !e?.note?.trim();
                   return (
                     <SortableCheckRow
-                      key={`${item.name}#${occ}`}
-                      id={`${item.name}#${occ}`}
+                      key={`${cat.group}::${item.name}#${occ}`}
+                      id={`${cat.group}::${item.name}#${occ}`}
                       className={`rounded-2xl border bg-card transition ${
                         noteMissing ? "border-rose-400 ring-1 ring-rose-200" : flagged ? "border-rose-200" : "border-border"
                       }`}
