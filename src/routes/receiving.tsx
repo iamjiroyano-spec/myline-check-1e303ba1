@@ -1,8 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AppShell, useShellState } from "@/components/AppShell";
 import { lsStore } from "@/lib/lsStore";
-import { upsertRecord, removeRecord } from "@/lib/recordStore";
 import { compressImageFile } from "@/lib/image";
 import { Camera, Trash2, X, PackageCheck, Plus, ChevronDown, ChevronUp, Pencil, Image as ImageIcon, Check as CheckIcon, Share2 } from "lucide-react";
 import { publishSharedReceiving } from "@/lib/shareReceiving";
@@ -272,10 +271,7 @@ function ReceivingPage() {
     if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  const submittingRef = useRef(false);
-
   function submit() {
-    if (submittingRef.current) return; // guard against double submits
     if (!form.receiverName.trim() && !form.checkedBy.trim()) {
       alert("Please enter the Receiver name (or select who checked).");
       return;
@@ -298,27 +294,30 @@ function ReceivingPage() {
       checkedBy: (form.checkedBy || form.receiverName).trim(),
       photos: form.photos,
     };
-    submittingRef.current = true;
-    try {
-      const latest = loadRecords();
-      const existing = editingId ? latest.find((r) => r.id === editingId) : undefined;
-      const rec: ReceivingRecord = {
-        ...(existing ?? {}),
-        id: existing?.id ?? `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        createdAt: existing?.createdAt ?? new Date().toISOString(),
-        ...values,
-      };
-      setRecords(upsertRecord(loadRecords, saveRecords, rec));
+    if (editingId) {
+      const next = records.map((r) => (r.id === editingId ? { ...r, ...values } : r));
+      setRecords(next);
+      saveRecords(next);
       resetForm();
-    } finally {
-      submittingRef.current = false;
+      return;
     }
+    const rec: ReceivingRecord = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      createdAt: new Date().toISOString(),
+      ...values,
+    };
+    const next = [rec, ...records];
+    setRecords(next);
+    saveRecords(next);
+    resetForm();
   }
 
 
   function deleteRecord(id: string) {
     if (!confirm("Delete this receiving record?")) return;
-    setRecords(removeRecord(loadRecords, saveRecords, id));
+    const next = records.filter((r) => r.id !== id);
+    setRecords(next);
+    saveRecords(next);
   }
 
   async function shareRecord(r: ReceivingRecord) {
