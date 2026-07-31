@@ -28,7 +28,6 @@ import { z } from "zod";
 import {
   DndContext,
   PointerSensor,
-  TouchSensor,
   KeyboardSensor,
   useSensor,
   useSensors,
@@ -335,9 +334,6 @@ function SectionPage() {
   const [draft, setDraft] = useState<EditCategory[]>(struct);
   const viewSensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
-    useSensor(TouchSensor, {
-      activationConstraint: { delay: 150, tolerance: 8 },
-    }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
   const persistStruct = (next: EditCategory[]) => {
@@ -347,39 +343,6 @@ function SectionPage() {
     setStruct(next);
     setDraft(next);
     window.dispatchEvent(new Event("linecheck:update"));
-  };
-
-  // Single drag handler for view mode: reorders categories ("cat:<group>" ids)
-  // or items within one category ("<group>::<name>#<occ>" ids).
-  const handleViewDragEnd = (ev: DragEndEvent) => {
-    const { active, over } = ev;
-    if (!over || active.id === over.id) return;
-    const a = String(active.id);
-    const o = String(over.id);
-    if (a.startsWith("cat:")) {
-      if (!o.startsWith("cat:")) return;
-      const from = struct.findIndex((c) => `cat:${c.group}` === a);
-      const to = struct.findIndex((c) => `cat:${c.group}` === o);
-      if (from < 0 || to < 0) return;
-      persistStruct(arrayMove(struct, from, to));
-      return;
-    }
-    const group = a.slice(0, a.indexOf("::"));
-    if (o.slice(0, o.indexOf("::")) !== group) return;
-    const cat = struct.find((c) => c.group === group);
-    if (!cat) return;
-    const seen = new Map<string, number>();
-    const ids = cat.items.map((it) => {
-      const occ = seen.get(it.name) ?? 0;
-      seen.set(it.name, occ + 1);
-      return `${group}::${it.name}#${occ}`;
-    });
-    const from = ids.indexOf(a);
-    const to = ids.indexOf(o);
-    if (from < 0 || to < 0) return;
-    persistStruct(
-      struct.map((c) => (c.group === group ? { ...c, items: arrayMove(c.items, from, to) } : c)),
-    );
   };
 
   // Quick action: move an item from one category to another (view mode),
@@ -507,24 +470,10 @@ function SectionPage() {
   }, [name, shell.date]);
 
   useEffect(() => {
-    const reload = () => {
-      const s = loadSectionStruct(name, defaultStruct);
-      setStruct(s);
-      setDraft((d) => (editMode ? d : s));
-    };
-    reload();
-    // Re-read after the user scope resolves (sign-in) or a sync pull lands,
-    // otherwise a saved category order can be replaced by the defaults.
-    window.addEventListener("linecheck:scope-change", reload);
-    window.addEventListener("linecheck:update", reload);
-    window.addEventListener("storage", reload);
-    return () => {
-      window.removeEventListener("linecheck:scope-change", reload);
-      window.removeEventListener("linecheck:update", reload);
-      window.removeEventListener("storage", reload);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [name, defaultStruct, editMode]);
+    const s = loadSectionStruct(name, defaultStruct);
+    setStruct(s);
+    setDraft(s);
+  }, [name, defaultStruct]);
 
   useEffect(() => {
     try {
@@ -1018,8 +967,8 @@ function SectionPage() {
 
 
       {/* Groups (view mode) */}
-      {!editMode && (() => {
-        const visibleCats = struct
+      {!editMode &&
+        struct
           .map((cat) => {
             const seen = new Map<string, number>();
             const withOcc = cat.items.map((item, idx) => {
@@ -1034,18 +983,7 @@ function SectionPage() {
             });
             return [cat, visible] as const;
           })
-          .filter(([, visible]) => visible.length > 0);
-        return (
-          <DndContext
-            sensors={viewSensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleViewDragEnd}
-          >
-            <SortableContext
-              items={visibleCats.map(([cat]) => `cat:${cat.group}`)}
-              strategy={verticalListSortingStrategy}
-            >
-        {visibleCats
+          .filter(([, visible]) => visible.length > 0)
           .map(([cat, items], catIdx) => {
             const palette = [
               "oklch(0.65 0.18 250)",
@@ -1060,23 +998,18 @@ function SectionPage() {
             const bg = `color-mix(in oklch, ${accent} 10%, var(--card))`;
             const headingColor = `color-mix(in oklch, ${accent} 65%, var(--foreground))`;
             return (
-            <SortableSection
+            <section
               key={cat.group}
-              id={`cat:${cat.group}`}
               className="mt-6 rounded-2xl border border-border p-3 category-block"
               style={{
                 background: bg,
                 borderLeft: `4px solid ${accent}`,
               }}
             >
-              {(catHandle) => (<>
               <div className="mb-2 flex flex-wrap items-center justify-between gap-2 px-1">
-                <div className="flex items-center gap-1.5">
-                  {catHandle}
-                  <h3 className="text-sm font-bold uppercase tracking-[0.14em]" style={{ color: headingColor }}>
-                    {cat.group}
-                  </h3>
-                </div>
+                <h3 className="text-sm font-bold uppercase tracking-[0.14em]" style={{ color: headingColor }}>
+                  {cat.group}
+                </h3>
                 {cat.temp && (
                   <div className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
                     <Thermometer className="h-3 w-3 text-sky-500" />
@@ -1103,8 +1036,24 @@ function SectionPage() {
                 )}
               </div>
 
+              <DndContext
+                sensors={viewSensors}
+                collisionDetection={closestCenter}
+                onDragEnd={(ev: DragEndEvent) => {
+                  const { active, over } = ev;
+                  if (!over || active.id === over.id) return;
+                  const from = items.find((v) => `${v.item.name}#${v.occ}` === active.id)?.idx;
+                  const to = items.find((v) => `${v.item.name}#${v.occ}` === over.id)?.idx;
+                  if (from == null || to == null) return;
+                  persistStruct(
+                    struct.map((c) =>
+                      c.group === cat.group ? { ...c, items: arrayMove(c.items, from, to) } : c,
+                    ),
+                  );
+                }}
+              >
                 <SortableContext
-                  items={items.map(({ item, occ }) => `${cat.group}::${item.name}#${occ}`)}
+                  items={items.map(({ item, occ }) => `${item.name}#${occ}`)}
                   strategy={verticalListSortingStrategy}
                 >
               <div className="space-y-2">
@@ -1118,8 +1067,8 @@ function SectionPage() {
                   const noteMissing = flagged && !e?.note?.trim();
                   return (
                     <SortableCheckRow
-                      key={`${cat.group}::${item.name}#${occ}`}
-                      id={`${cat.group}::${item.name}#${occ}`}
+                      key={`${item.name}#${occ}`}
+                      id={`${item.name}#${occ}`}
                       className={`rounded-2xl border bg-card transition ${
                         noteMissing ? "border-rose-400 ring-1 ring-rose-200" : flagged ? "border-rose-200" : "border-border"
                       }`}
@@ -1306,14 +1255,10 @@ function SectionPage() {
 
               </div>
                 </SortableContext>
-              </>)}
-            </SortableSection>
+              </DndContext>
+            </section>
 
           );})}
-            </SortableContext>
-          </DndContext>
-        );
-      })()}
 
       {!editMode && (
         <section className="mt-8">
@@ -1901,9 +1846,9 @@ function SortableCheckRow({
       {...listeners}
       aria-label="Drag to reorder item"
       title="Drag to reorder"
-      className="-ml-1 grid h-9 w-8 shrink-0 cursor-grab touch-none select-none place-items-center rounded-lg text-muted-foreground hover:bg-accent active:cursor-grabbing active:bg-accent"
+      className="grid h-7 w-5 shrink-0 cursor-grab touch-none place-items-center rounded text-muted-foreground hover:bg-accent active:cursor-grabbing"
     >
-      <GripVertical className="h-5 w-5" />
+      <GripVertical className="h-4 w-4" />
     </button>
   );
   return (
@@ -1920,49 +1865,5 @@ function SortableCheckRow({
     >
       {children(handle)}
     </div>
-  );
-}
-
-function SortableSection({
-  id,
-  className,
-  style,
-  children,
-}: {
-  id: string;
-  className: string;
-  style?: React.CSSProperties;
-  children: (handle: React.ReactNode) => React.ReactNode;
-}) {
-  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } =
-    useSortable({ id });
-  const handle = (
-    <button
-      type="button"
-      ref={setActivatorNodeRef}
-      {...attributes}
-      {...listeners}
-      aria-label="Drag to reorder category"
-      title="Drag to reorder category"
-      className="-ml-1 grid h-10 w-10 shrink-0 cursor-grab touch-none select-none place-items-center rounded-lg text-muted-foreground hover:bg-accent active:cursor-grabbing active:bg-accent"
-    >
-      <GripVertical className="h-5 w-5" />
-    </button>
-  );
-  return (
-    <section
-      ref={setNodeRef}
-      style={{
-        ...style,
-        transform: CSS.Transform.toString(transform),
-        transition,
-        opacity: isDragging ? 0.6 : 1,
-        zIndex: isDragging ? 20 : undefined,
-        position: "relative",
-      }}
-      className={className}
-    >
-      {children(handle)}
-    </section>
   );
 }

@@ -1,8 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AppShell, useShellState } from "@/components/AppShell";
 import { lsStore } from "@/lib/lsStore";
-import { upsertRecord, removeRecord } from "@/lib/recordStore";
 import { compressImageFile } from "@/lib/image";
 import { STAFF, getEffectiveSections } from "@/lib/lineCheck";
 import {
@@ -317,42 +316,57 @@ function ClosingPage() {
     if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  const submittingRef = useRef(false);
-
   function submit() {
-    if (submittingRef.current) return; // guard against double submits
     const crew = form.crew.filter((c) => c.member.trim());
     if (!form.closedBy.trim() && crew.length === 0) {
       alert("Please select at least one team member closing.");
       return;
     }
-    submittingRef.current = true;
-    try {
-      const latest = loadRecords();
-      const existing = editingId ? latest.find((r) => r.id === editingId) : undefined;
-      const rec: ClosingRecord = {
-        id: existing?.id ?? `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        createdAt: existing?.createdAt ?? new Date().toISOString(),
-        date: form.date,
-        time: form.time,
-        branch: form.branch.trim(),
-        closedBy: form.closedBy.trim() || crew.map((c) => c.member).join(", "),
-        crew,
-        checks: form.checks,
-        notes: form.notes.trim(),
-        photos: form.photos,
-      };
-      setRecords(upsertRecord(loadRecords, saveRecords, rec));
+    if (editingId) {
+      const next = records.map((r) =>
+        r.id === editingId
+          ? {
+              ...r,
+              date: form.date,
+              time: form.time,
+              branch: form.branch.trim(),
+              closedBy: form.closedBy.trim() || crew.map((c) => c.member).join(", "),
+              crew,
+              checks: form.checks,
+              notes: form.notes.trim(),
+              photos: form.photos,
+            }
+          : r,
+      );
+      setRecords(next);
+      saveRecords(next);
       resetForm();
-    } finally {
-      submittingRef.current = false;
+      return;
     }
+    const rec: ClosingRecord = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      createdAt: new Date().toISOString(),
+      date: form.date,
+      time: form.time,
+      branch: form.branch.trim(),
+      closedBy: form.closedBy.trim() || crew.map((c) => c.member).join(", "),
+      crew,
+      checks: form.checks,
+      notes: form.notes.trim(),
+      photos: form.photos,
+    };
+    const next = [rec, ...records];
+    setRecords(next);
+    saveRecords(next);
+    resetForm();
   }
 
 
   function deleteRecord(id: string) {
     if (!confirm("Delete this closing report?")) return;
-    setRecords(removeRecord(loadRecords, saveRecords, id));
+    const next = records.filter((r) => r.id !== id);
+    setRecords(next);
+    saveRecords(next);
   }
 
   async function shareRecord(r: ClosingRecord) {
