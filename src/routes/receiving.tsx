@@ -272,6 +272,8 @@ function ReceivingPage() {
     if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
+  const submittingRef = useRef(false);
+
   function submit() {
     if (submittingRef.current) return; // guard against double submits
     if (!form.receiverName.trim() && !form.checkedBy.trim()) {
