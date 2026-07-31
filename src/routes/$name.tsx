@@ -28,7 +28,6 @@ import { z } from "zod";
 import {
   DndContext,
   PointerSensor,
-  TouchSensor,
   KeyboardSensor,
   useSensor,
   useSensors,
@@ -335,9 +334,6 @@ function SectionPage() {
   const [draft, setDraft] = useState<EditCategory[]>(struct);
   const viewSensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
-    useSensor(TouchSensor, {
-      activationConstraint: { delay: 150, tolerance: 8 },
-    }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
   const persistStruct = (next: EditCategory[]) => {
@@ -507,24 +503,10 @@ function SectionPage() {
   }, [name, shell.date]);
 
   useEffect(() => {
-    const reload = () => {
-      const s = loadSectionStruct(name, defaultStruct);
-      setStruct(s);
-      setDraft((d) => (editMode ? d : s));
-    };
-    reload();
-    // Re-read after the user scope resolves (sign-in) or a sync pull lands,
-    // otherwise a saved category order can be replaced by the defaults.
-    window.addEventListener("linecheck:scope-change", reload);
-    window.addEventListener("linecheck:update", reload);
-    window.addEventListener("storage", reload);
-    return () => {
-      window.removeEventListener("linecheck:scope-change", reload);
-      window.removeEventListener("linecheck:update", reload);
-      window.removeEventListener("storage", reload);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [name, defaultStruct, editMode]);
+    const s = loadSectionStruct(name, defaultStruct);
+    setStruct(s);
+    setDraft(s);
+  }, [name, defaultStruct]);
 
   useEffect(() => {
     try {
@@ -1901,9 +1883,9 @@ function SortableCheckRow({
       {...listeners}
       aria-label="Drag to reorder item"
       title="Drag to reorder"
-      className="-ml-1 grid h-9 w-8 shrink-0 cursor-grab touch-none select-none place-items-center rounded-lg text-muted-foreground hover:bg-accent active:cursor-grabbing active:bg-accent"
+      className="grid h-7 w-5 shrink-0 cursor-grab touch-none place-items-center rounded text-muted-foreground hover:bg-accent active:cursor-grabbing"
     >
-      <GripVertical className="h-5 w-5" />
+      <GripVertical className="h-4 w-4" />
     </button>
   );
   return (
@@ -1944,9 +1926,9 @@ function SortableSection({
       {...listeners}
       aria-label="Drag to reorder category"
       title="Drag to reorder category"
-      className="-ml-1 grid h-10 w-10 shrink-0 cursor-grab touch-none select-none place-items-center rounded-lg text-muted-foreground hover:bg-accent active:cursor-grabbing active:bg-accent"
+      className="grid h-7 w-5 shrink-0 cursor-grab touch-none place-items-center rounded text-muted-foreground hover:bg-accent active:cursor-grabbing"
     >
-      <GripVertical className="h-5 w-5" />
+      <GripVertical className="h-4 w-4" />
     </button>
   );
   return (
