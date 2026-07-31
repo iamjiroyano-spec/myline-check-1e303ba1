@@ -9,6 +9,8 @@ let suppressPush = false;
 let pushTimer: ReturnType<typeof setTimeout> | null = null;
 let currentUserId: string | null = null;
 let unsubWrite: (() => void) | null = null;
+/** Serialized snapshot of our last successful push, used to ignore echoes. */
+let lastPushedSnapshot: string | null = null;
 
 function collectSnapshot(): Record<string, string> {
   const out: Record<string, string> = {};
