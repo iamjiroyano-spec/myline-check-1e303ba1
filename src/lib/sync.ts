@@ -119,6 +119,45 @@ function flushPendingPush() {
   }
 }
 
+/** Live channel that mirrors this account's state from other devices. */
+let realtimeChannel: ReturnType<typeof supabase.channel> | null = null;
+
+function startRealtime(userId: string) {
+  stopRealtime();
+  realtimeChannel = supabase
+    .channel(`user_state:${userId}`)
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "user_state",
+        filter: `user_id=eq.${userId}`,
+      },
+      (payload) => {
+        // Ignore the echo of a push this device just made.
+        const row = payload.new as { data?: Record<string, string> } | null;
+        const remote = row?.data;
+        if (!remote || typeof remote !== "object") return;
+        if (JSON.stringify(remote) === lastPushedSnapshot) return;
+        applyRemote(remote);
+      },
+    )
+    .subscribe();
+}
+
+function stopRealtime() {
+  if (realtimeChannel) {
+    void supabase.removeChannel(realtimeChannel);
+    realtimeChannel = null;
+  }
+}
+
+function onVisibilityChange() {
+  if (document.visibilityState === "hidden") flushPendingPush();
+  else if (!isOffline()) void pullFromServer();
+}
+
 export async function startSync(userId: string) {
   if (currentUserId === userId) return;
   currentUserId = userId;
@@ -131,23 +170,23 @@ export async function startSync(userId: string) {
     window.addEventListener("pagehide", flushPendingPush);
     window.addEventListener("beforeunload", flushPendingPush);
     window.addEventListener("online", onBackOnline);
-    document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "hidden") flushPendingPush();
-    });
+    document.addEventListener("visibilitychange", onVisibilityChange);
     unsubWrite = () => {
       window.removeEventListener("linecheck:local-write", onLocalWrite);
       window.removeEventListener("pagehide", flushPendingPush);
       window.removeEventListener("beforeunload", flushPendingPush);
       window.removeEventListener("online", onBackOnline);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
     };
   }
   if (!isOffline()) await pullFromServer();
-
+  startRealtime(userId);
 }
 
 
 export function stopSync() {
   currentUserId = null;
+  stopRealtime();
   if (pushTimer) {
     clearTimeout(pushTimer);
     pushTimer = null;
