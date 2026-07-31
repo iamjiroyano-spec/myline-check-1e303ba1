@@ -507,10 +507,24 @@ function SectionPage() {
   }, [name, shell.date]);
 
   useEffect(() => {
-    const s = loadSectionStruct(name, defaultStruct);
-    setStruct(s);
-    setDraft(s);
-  }, [name, defaultStruct]);
+    const reload = () => {
+      const s = loadSectionStruct(name, defaultStruct);
+      setStruct(s);
+      setDraft((d) => (editMode ? d : s));
+    };
+    reload();
+    // Re-read after the user scope resolves (sign-in) or a sync pull lands,
+    // otherwise a saved category order can be replaced by the defaults.
+    window.addEventListener("linecheck:scope-change", reload);
+    window.addEventListener("linecheck:synced", reload);
+    window.addEventListener("storage", reload);
+    return () => {
+      window.removeEventListener("linecheck:scope-change", reload);
+      window.removeEventListener("linecheck:synced", reload);
+      window.removeEventListener("storage", reload);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [name, defaultStruct, editMode]);
 
   useEffect(() => {
     try {
