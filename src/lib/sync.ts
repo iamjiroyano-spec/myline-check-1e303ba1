@@ -69,6 +69,25 @@ function onLocalWrite() {
   schedulePush();
 }
 
+/** Write a remote snapshot into local storage without echoing it back up. */
+function applyRemote(remote: Record<string, string>) {
+  suppressPush = true;
+  try {
+    // Merge: overwrite with remote values, but preserve any local-only keys
+    // (e.g. writes that hadn't been pushed yet before a refresh).
+    for (const [k, v] of Object.entries(remote)) {
+      if (typeof v === "string" && k.startsWith(PREFIX)) lsStore.setItem(k, v);
+    }
+  } finally {
+    suppressPush = false;
+  }
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("linecheck:update"));
+    window.dispatchEvent(new Event("linecheck:staff-update"));
+    window.dispatchEvent(new Event("linecheck:brand-update"));
+  }
+}
+
 async function pullFromServer() {
   if (!currentUserId) return;
   try {
@@ -84,26 +103,7 @@ async function pullFromServer() {
       await pushNow();
       return;
     }
-    suppressPush = true;
-    try {
-      // Merge: overwrite with remote values, but preserve any local-only keys
-      // (e.g. writes that hadn't been pushed yet before a refresh).
-      const localKeys = new Set(lsStore.keys().filter((k) => k.startsWith(PREFIX)));
-      for (const [k, v] of Object.entries(remote)) {
-        if (typeof v === "string" && k.startsWith(PREFIX)) {
-          lsStore.setItem(k, v);
-          localKeys.delete(k);
-        }
-      }
-      // localKeys now contains local-only keys — leave them intact.
-    } finally {
-      suppressPush = false;
-    }
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new Event("linecheck:update"));
-      window.dispatchEvent(new Event("linecheck:staff-update"));
-      window.dispatchEvent(new Event("linecheck:brand-update"));
-    }
+    applyRemote(remote);
     // If we had unpushed local-only keys, push the merged snapshot back up.
     void pushNow();
   } catch (e) {
