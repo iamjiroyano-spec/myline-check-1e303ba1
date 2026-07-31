@@ -28,6 +28,7 @@ import { z } from "zod";
 import {
   DndContext,
   PointerSensor,
+  TouchSensor,
   KeyboardSensor,
   useSensor,
   useSensors,
@@ -334,6 +335,9 @@ function SectionPage() {
   const [draft, setDraft] = useState<EditCategory[]>(struct);
   const viewSensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 150, tolerance: 8 },
+    }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
   const persistStruct = (next: EditCategory[]) => {
