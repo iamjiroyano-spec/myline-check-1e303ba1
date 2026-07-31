@@ -273,6 +273,7 @@ function ReceivingPage() {
   }
 
   function submit() {
+    if (submittingRef.current) return; // guard against double submits
     if (!form.receiverName.trim() && !form.checkedBy.trim()) {
       alert("Please enter the Receiver name (or select who checked).");
       return;
@@ -295,30 +296,27 @@ function ReceivingPage() {
       checkedBy: (form.checkedBy || form.receiverName).trim(),
       photos: form.photos,
     };
-    if (editingId) {
-      const next = records.map((r) => (r.id === editingId ? { ...r, ...values } : r));
-      setRecords(next);
-      saveRecords(next);
+    submittingRef.current = true;
+    try {
+      const latest = loadRecords();
+      const existing = editingId ? latest.find((r) => r.id === editingId) : undefined;
+      const rec: ReceivingRecord = {
+        ...(existing ?? {}),
+        id: existing?.id ?? `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        createdAt: existing?.createdAt ?? new Date().toISOString(),
+        ...values,
+      };
+      setRecords(upsertRecord(loadRecords, saveRecords, rec));
       resetForm();
-      return;
+    } finally {
+      submittingRef.current = false;
     }
-    const rec: ReceivingRecord = {
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-      createdAt: new Date().toISOString(),
-      ...values,
-    };
-    const next = [rec, ...records];
-    setRecords(next);
-    saveRecords(next);
-    resetForm();
   }
 
 
   function deleteRecord(id: string) {
     if (!confirm("Delete this receiving record?")) return;
-    const next = records.filter((r) => r.id !== id);
-    setRecords(next);
-    saveRecords(next);
+    setRecords(removeRecord(loadRecords, saveRecords, id));
   }
 
   async function shareRecord(r: ReceivingRecord) {
