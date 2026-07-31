@@ -44,6 +44,7 @@ async function pushNow() {
         { onConflict: "user_id" },
       );
     if (error) throw error;
+    lastPushedSnapshot = JSON.stringify(data);
     pendingWhileOffline = false;
   } catch (e) {
     pendingWhileOffline = true;
