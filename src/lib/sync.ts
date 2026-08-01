@@ -71,6 +71,7 @@ function onLocalWrite() {
 
 async function pullFromServer() {
   if (!currentUserId) return;
+  const userAtStart = currentUserId;
   try {
     const { data, error } = await supabase
       .from("user_state")
@@ -78,37 +79,58 @@ async function pullFromServer() {
       .eq("user_id", currentUserId)
       .maybeSingle();
     if (error) throw error;
+    // Account switched while the request was in flight — discard.
+    if (currentUserId !== userAtStart) return;
     const remote = (data?.data ?? null) as Record<string, string> | null;
     if (!remote) {
       // No remote yet — push whatever we have locally so future devices see it.
       await pushNow();
       return;
     }
+    let changed = false;
     suppressPush = true;
     try {
-      // Merge: overwrite with remote values, but preserve any local-only keys
-      // (e.g. writes that hadn't been pushed yet before a refresh).
       const localKeys = new Set(lsStore.keys().filter((k) => k.startsWith(PREFIX)));
       for (const [k, v] of Object.entries(remote)) {
         if (typeof v === "string" && k.startsWith(PREFIX)) {
-          lsStore.setItem(k, v);
+          if (lsStore.getItem(k) !== v) {
+            lsStore.setItem(k, v);
+            changed = true;
+          }
           localKeys.delete(k);
         }
       }
-      // localKeys now contains local-only keys — leave them intact.
+      // Keys that were in the last synced snapshot but are gone remotely were
+      // deleted on another device — mirror that deletion here. Keys never seen
+      // on the server are local-only (unpushed) and stay intact.
+      for (const k of localKeys) {
+        if (lastRemoteKeys.has(k)) {
+          lsStore.removeItem(k);
+          changed = true;
+        }
+      }
+      lastRemoteKeys = new Set(Object.keys(remote));
     } finally {
       suppressPush = false;
     }
-    if (typeof window !== "undefined") {
+    if (changed && typeof window !== "undefined") {
       window.dispatchEvent(new Event("linecheck:update"));
       window.dispatchEvent(new Event("linecheck:staff-update"));
+      window.dispatchEvent(new Event("linecheck:members-update"));
       window.dispatchEvent(new Event("linecheck:brand-update"));
     }
     // If we had unpushed local-only keys, push the merged snapshot back up.
-    void pushNow();
+    if (localOnlyPending()) void pushNow();
   } catch (e) {
     console.warn("[sync] pull failed", e);
   }
+}
+
+function localOnlyPending() {
+  for (const k of lsStore.keys()) {
+    if (k.startsWith(PREFIX) && !lastRemoteKeys.has(k)) return true;
+  }
+  return false;
 }
 
 function flushPendingPush() {
@@ -119,31 +141,46 @@ function flushPendingPush() {
   }
 }
 
+function onVisible() {
+  if (document.visibilityState === "hidden") {
+    flushPendingPush();
+  } else if (currentUserId && !isOffline()) {
+    void pullFromServer();
+  }
+}
+
 export async function startSync(userId: string) {
   if (currentUserId === userId) return;
+  // Switching accounts: drop any state tied to the previous user.
+  stopSync();
   currentUserId = userId;
-  // Make sure lsStore scope has been set to this user before pulling.
-  if (getUserScope() !== userId) {
-    // Scope is expected to be set by the auth listener; still safe to proceed.
-  }
+  lastRemoteKeys = new Set();
+  pendingWhileOffline = false;
   if (typeof window !== "undefined" && !unsubWrite) {
     window.addEventListener("linecheck:local-write", onLocalWrite);
     window.addEventListener("pagehide", flushPendingPush);
     window.addEventListener("beforeunload", flushPendingPush);
     window.addEventListener("online", onBackOnline);
-    document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "hidden") flushPendingPush();
-    });
+    window.addEventListener("focus", onVisible);
+    document.addEventListener("visibilitychange", onVisible);
+    // Periodic refresh so changes made on another device show up here.
+    pollTimer = setInterval(() => {
+      if (currentUserId && !isOffline() && document.visibilityState === "visible") {
+        void pullFromServer();
+      }
+    }, 30000);
     unsubWrite = () => {
       window.removeEventListener("linecheck:local-write", onLocalWrite);
       window.removeEventListener("pagehide", flushPendingPush);
       window.removeEventListener("beforeunload", flushPendingPush);
       window.removeEventListener("online", onBackOnline);
+      window.removeEventListener("focus", onVisible);
+      document.removeEventListener("visibilitychange", onVisible);
     };
   }
   if (!isOffline()) await pullFromServer();
-
 }
+
 
 
 export function stopSync() {
