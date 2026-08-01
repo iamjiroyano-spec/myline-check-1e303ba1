@@ -187,9 +187,14 @@ export async function startSync(userId: string) {
 
 export function stopSync() {
   currentUserId = null;
+  lastRemoteKeys = new Set();
   if (pushTimer) {
     clearTimeout(pushTimer);
     pushTimer = null;
+  }
+  if (pollTimer) {
+    clearInterval(pollTimer);
+    pollTimer = null;
   }
   if (unsubWrite) {
     unsubWrite();
