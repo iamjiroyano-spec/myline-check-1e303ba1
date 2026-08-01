@@ -137,6 +137,10 @@ export function stopStaffSync() {
     clearTimeout(timer);
     timer = null;
   }
+  if (pollTimer) {
+    clearInterval(pollTimer);
+    pollTimer = null;
+  }
   if (unsub) {
     unsub();
     unsub = null;
