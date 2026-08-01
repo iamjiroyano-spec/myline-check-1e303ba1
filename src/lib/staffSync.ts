@@ -131,31 +131,6 @@ export async function startStaffSync(s: StaffSession) {
   await pullNow();
 }
 
-  try {
-    const res = await staffPullState({ data: { name: s.name, pin: s.pin } });
-
-    const remote = res?.ok ? res.state : null;
-    if (remote) {
-      suppress = true;
-      try {
-        for (const [k, v] of Object.entries(remote)) {
-          if (typeof v === "string" && k.startsWith(PREFIX)) lsStore.setItem(k, v);
-        }
-      } finally {
-        suppress = false;
-      }
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new Event("linecheck:update"));
-        window.dispatchEvent(new Event("linecheck:staff-update"));
-        window.dispatchEvent(new Event("linecheck:members-update"));
-        window.dispatchEvent(new Event("linecheck:brand-update"));
-      }
-    }
-  } catch (e) {
-    console.warn("[staff-sync] pull failed", e);
-  }
-}
-
 export function stopStaffSync() {
   session = null;
   if (timer) {
