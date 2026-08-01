@@ -66,8 +66,46 @@ function flush() {
   }
 }
 
+async function pullNow() {
+  if (!session || isOffline()) return;
+  try {
+    const res = await staffPullState({ data: { name: session.name, pin: session.pin } });
+    const remote = res?.ok ? res.state : null;
+    if (!remote) return;
+    let changed = false;
+    suppress = true;
+    try {
+      for (const [k, v] of Object.entries(remote)) {
+        if (typeof v === "string" && k.startsWith(PREFIX) && lsStore.getItem(k) !== v) {
+          lsStore.setItem(k, v);
+          changed = true;
+        }
+      }
+    } finally {
+      suppress = false;
+    }
+    if (changed && typeof window !== "undefined") {
+      window.dispatchEvent(new Event("linecheck:update"));
+      window.dispatchEvent(new Event("linecheck:staff-update"));
+      window.dispatchEvent(new Event("linecheck:members-update"));
+      window.dispatchEvent(new Event("linecheck:brand-update"));
+    }
+  } catch (e) {
+    console.warn("[staff-sync] pull failed", e);
+  }
+}
+
+let pollTimer: ReturnType<typeof setInterval> | null = null;
+
+function onVisible() {
+  if (typeof document === "undefined") return;
+  if (document.visibilityState === "hidden") flush();
+  else void pullNow();
+}
+
 export async function startStaffSync(s: StaffSession) {
   if (session && session.id === s.id) return;
+  stopStaffSync();
   session = s;
   if (typeof window !== "undefined" && !unsub) {
     const onWrite = () => schedulePush();
@@ -75,14 +113,24 @@ export async function startStaffSync(s: StaffSession) {
     window.addEventListener("pagehide", flush);
     window.addEventListener("beforeunload", flush);
     window.addEventListener("online", onBackOnline);
+    window.addEventListener("focus", onVisible);
+    document.addEventListener("visibilitychange", onVisible);
+    pollTimer = setInterval(() => {
+      if (document.visibilityState === "visible") void pullNow();
+    }, 30000);
     unsub = () => {
       window.removeEventListener("linecheck:local-write", onWrite);
       window.removeEventListener("pagehide", flush);
       window.removeEventListener("beforeunload", flush);
       window.removeEventListener("online", onBackOnline);
+      window.removeEventListener("focus", onVisible);
+      document.removeEventListener("visibilitychange", onVisible);
     };
   }
   if (isOffline()) return; // keep working from local data
+  await pullNow();
+}
+
   try {
     const res = await staffPullState({ data: { name: s.name, pin: s.pin } });
 
