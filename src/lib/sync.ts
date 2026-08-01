@@ -9,6 +9,8 @@ let suppressPush = false;
 let pushTimer: ReturnType<typeof setTimeout> | null = null;
 let currentUserId: string | null = null;
 let unsubWrite: (() => void) | null = null;
+let lastRemoteKeys = new Set<string>();
+let pollTimer: ReturnType<typeof setInterval> | null = null;
 
 function collectSnapshot(): Record<string, string> {
   const out: Record<string, string> = {};
