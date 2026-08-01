@@ -1311,29 +1311,69 @@ function AccessPanel() {
           )}
           {emails.map((e) => {
             const isAdminRow = e.toLowerCase() === ADMIN_EMAIL;
+            const open = pwFor === e;
             return (
-              <li key={e} className="flex items-center justify-between gap-3 p-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm">{e}</span>
-                  {isAdminRow && (
-                    <span className="rounded-full bg-foreground/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-foreground">
-                      Admin
-                    </span>
-                  )}
+              <li key={e} className="p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm">{e}</span>
+                    {isAdminRow && (
+                      <span className="rounded-full bg-foreground/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-foreground">
+                        Admin
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPwFor(open ? null : e);
+                        setPwValue("");
+                        setPwMsg(null);
+                      }}
+                      className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs font-semibold text-foreground hover:bg-muted"
+                    >
+                      <KeyRound className="h-3.5 w-3.5" />
+                      Set password
+                    </button>
+                    {!isAdminRow && (
+                      <button
+                        type="button"
+                        onClick={() => void remove(e)}
+                        className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                        aria-label={`Remove ${e}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
                 </div>
-                {!isAdminRow && (
-                  <button
-                    type="button"
-                    onClick={() => void remove(e)}
-                    className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-                    aria-label={`Remove ${e}`}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                {open && (
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <input
+                      type="text"
+                      value={pwValue}
+                      onChange={(ev) => setPwValue(ev.target.value)}
+                      placeholder="New password (min 8 characters)"
+                      className="min-w-0 flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-foreground"
+                    />
+                    <button
+                      type="button"
+                      disabled={pwBusy}
+                      onClick={() => void savePassword(e)}
+                      className="rounded-lg bg-foreground px-3 py-2 text-sm font-semibold text-background hover:opacity-90 disabled:opacity-50"
+                    >
+                      {pwBusy ? "Saving…" : "Save"}
+                    </button>
+                    {pwMsg && (
+                      <p className="w-full text-xs text-muted-foreground">{pwMsg}</p>
+                    )}
+                  </div>
                 )}
               </li>
             );
           })}
+
         </ul>
       )}
     </section>
