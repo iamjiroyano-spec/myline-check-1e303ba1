@@ -56,9 +56,9 @@ export async function publishSharedClosing(
     return url;
   }
 
-  const { data: userData, error: userErr } = await supabase.auth.getUser();
-  if (userErr || !userData.user) throw new Error("Sign in required to share");
-  const owner_id = userData.user.id;
+  const { data: sessionData } = await supabase.auth.getSession();
+  const owner_id = sessionData.session?.user?.id;
+  if (!owner_id) throw new Error("Sign in required to share");
 
 
   const { data, error } = await supabase
