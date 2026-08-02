@@ -9,6 +9,7 @@ import {
   type Slot,
 } from "@/lib/lineCheck";
 import { lsStore } from "@/lib/lsStore";
+import { optimizePayload, getCachedShareUrl, setCachedShareUrl } from "@/lib/shareOptimize";
 
 const slotSchema = z.string();
 
@@ -114,10 +115,13 @@ function buildPayload(date: string, slot: Slot): SharedShiftPayload {
  * Uses upsert on (owner_id, date, shift) so re-sharing keeps the same link.
  */
 export async function publishSharedShift(date: string, slot: Slot): Promise<string> {
+  const payload = await optimizePayload(buildPayload(date, slot));
+  const cached = getCachedShareUrl("shift", `${date}:${slot}`, payload);
+  if (cached) return cached;
+
   const { data: userData, error: userErr } = await supabase.auth.getUser();
   if (userErr || !userData.user) throw new Error("Sign in required to share");
   const owner_id = userData.user.id;
-  const payload = buildPayload(date, slot);
 
   const { data, error } = await supabase
     .from("shared_shifts")
@@ -136,5 +140,6 @@ export async function publishSharedShift(date: string, slot: Slot): Promise<stri
     .select("id")
     .single();
   if (error || !data) throw error ?? new Error("Failed to publish share");
+  setCachedShareUrl("shift", `${date}:${slot}`, payload, `${window.location.origin}/s/${data.id}`);
   return `${window.location.origin}/s/${data.id}`;
 }

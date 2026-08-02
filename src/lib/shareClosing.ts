@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { lsStore } from "@/lib/lsStore";
+import { optimizePayload, getCachedShareUrl, setCachedShareUrl } from "@/lib/shareOptimize";
 import { getStaffSession } from "@/lib/staffSession";
 import { staffPublishShare } from "@/lib/staffShare.functions";
 
@@ -34,7 +35,9 @@ export async function publishSharedClosing(
   record: Record<string, unknown> & { id: string },
 ): Promise<string> {
   const brand_name = lsStore.getItem("linecheck:settings:brand:name") || "LUMA";
-  const payload = { ...record, brand_name };
+  const payload = await optimizePayload({ ...record, brand_name });
+  const cached = getCachedShareUrl("closing", record.id, payload);
+  if (cached) return cached;
 
   const staff = getStaffSession();
   if (staff) {
@@ -48,7 +51,9 @@ export async function publishSharedClosing(
         payload: JSON.parse(JSON.stringify(payload)),
       },
     });
-    return `${window.location.origin}/c/${id}`;
+    const url = `${window.location.origin}/c/${id}`;
+    setCachedShareUrl("closing", record.id, payload, url);
+    return url;
   }
 
   const { data: userData, error: userErr } = await supabase.auth.getUser();
@@ -71,5 +76,7 @@ export async function publishSharedClosing(
     .select("id")
     .single();
   if (error || !data) throw error ?? new Error("Failed to publish share");
-  return `${window.location.origin}/c/${data.id}`;
+  const url = `${window.location.origin}/c/${data.id}`;
+  setCachedShareUrl("closing", record.id, payload, url);
+  return url;
 }
