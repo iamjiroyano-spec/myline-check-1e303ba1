@@ -51,10 +51,11 @@ function onBackOnline() {
 function schedulePush() {
   if (suppress || !session) return;
   if (timer) clearTimeout(timer);
+  // Save immediately; the tiny delay only coalesces writes fired in the same tick.
   timer = setTimeout(() => {
     timer = null;
     void pushNow();
-  }, 900);
+  }, 100);
 }
 
 
