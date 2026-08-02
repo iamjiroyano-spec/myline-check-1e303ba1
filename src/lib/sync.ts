@@ -54,10 +54,11 @@ async function pushNow() {
 function schedulePush() {
   if (suppressPush || !currentUserId) return;
   if (pushTimer) clearTimeout(pushTimer);
+  // Save immediately; the tiny delay only coalesces writes fired in the same tick.
   pushTimer = setTimeout(() => {
     pushTimer = null;
     void pushNow();
-  }, 800);
+  }, 100);
 }
 
 function onBackOnline() {
