@@ -78,5 +78,7 @@ export async function publishSharedReceiving(
     .select("id")
     .single();
   if (error || !data) throw error ?? new Error("Failed to publish share");
-  return `${window.location.origin}/r/${data.id}`;
+  const url = `${window.location.origin}/r/${data.id}`;
+  setCachedShareUrl("receiving", record.id, payload, url);
+  return url;
 }
