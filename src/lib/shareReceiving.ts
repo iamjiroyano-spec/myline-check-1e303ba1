@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { lsStore } from "@/lib/lsStore";
+import { optimizePayload, getCachedShareUrl, setCachedShareUrl } from "@/lib/shareOptimize";
 import { getStaffSession } from "@/lib/staffSession";
 import { staffPublishShare } from "@/lib/staffShare.functions";
 

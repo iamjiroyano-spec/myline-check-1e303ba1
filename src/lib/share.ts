@@ -9,6 +9,7 @@ import {
   type Slot,
 } from "@/lib/lineCheck";
 import { lsStore } from "@/lib/lsStore";
+import { optimizePayload, getCachedShareUrl, setCachedShareUrl } from "@/lib/shareOptimize";
 
 const slotSchema = z.string();
 
