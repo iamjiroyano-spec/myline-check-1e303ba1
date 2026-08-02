@@ -119,9 +119,10 @@ export async function publishSharedShift(date: string, slot: Slot): Promise<stri
   const cached = getCachedShareUrl("shift", `${date}:${slot}`, payload);
   if (cached) return cached;
 
-  const { data: userData, error: userErr } = await supabase.auth.getUser();
-  if (userErr || !userData.user) throw new Error("Sign in required to share");
-  const owner_id = userData.user.id;
+  // getSession() reads the cached session locally; getUser() would add a network round-trip.
+  const { data: sessionData } = await supabase.auth.getSession();
+  const owner_id = sessionData.session?.user?.id;
+  if (!owner_id) throw new Error("Sign in required to share");
 
   const { data, error } = await supabase
     .from("shared_shifts")
